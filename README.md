@@ -1,7 +1,7 @@
 <!-- PROJECT SHIELDS -->
 <p align="center">
   <a href="https://github.com/nemoobc/EIP-7702-TOOL">
-    <img src="https://img.shields.io/badge/Version-3.0.0-brightgreen?style=for-the-badge&logo=github" alt="Version">
+    <img src="https://img.shields.io/badge/Version-3.1.0-brightgreen?style=for-the-badge&logo=github" alt="Version">
   </a>
   <a href="https://github.com/nemoobc/EIP-7702-TOOL/network/members">
     <img src="https://img.shields.io/github/forks/nemoobc/EIP-7702-TOOL?style=for-the-badge&logo=github&color=blue" alt="Forks">
@@ -17,19 +17,25 @@
   </a>
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-v18+-green?style=for-the-badge&logo=node.js" alt="Node.js">
+  <img src="https://img.shields.io/badge/Network-Mainnet+Sepolia-blue?style=for-the-badge" alt="Network">
+  <img src="https://img.shields.io/badge/Status-Active-brightgreen?style=for-the-badge" alt="Status">
+</p>
+
 <h1 align="center">
   <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="30px">
-  EIP-7702 TOOL
+  🔥 EIP-7702 TOOL 🔥
   <img src="https://media.giphy.com/media/hvRJCLFzcasrR4ia7z/giphy.gif" width="30px">
 </h1>
 
 <p align="center">
   <b>✨ Wallet CLI & EIP-7702 Toolkit ✨</b><br>
-  <i>Create wallet, import, export, send ETH/token, batch call, rescue assets, revoke delegation, claim airdrop, auto-verify Sourcify</i>
+  <i>Create wallet, import, export, send ETH/token, batch call, rescue assets, revoke delegation, claim airdrop, Approval Manager, Mainnet Safety</i>
 </p>
 
 <p align="center">
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=24&pause=1000&color=F7B93E&center=true&vCenter=true&width=700&lines=Full+Animasi+Warna-warni;EIP-7702+Tool;Wallet+CLI+interaktif;Node.js+%2B+Viem+%2B+Ethers;Auto-verify+Sourcify" alt="Typing SVG" />
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=24&pause=1000&color=F7B93E&center=true&vCenter=true&width=700&lines=Full+Animasi+Warna-warni;EIP-7702+Tool;Wallet+CLI+interaktif;Node.js+%2B+Viem+%2B+Ethers;Mainnet+Ready" alt="Typing SVG" />
 </p>
 
 ---
@@ -45,95 +51,52 @@ Dengan EIP-7702, sebuah Externally Owned Account (EOA) dapat didelegasikan semen
 ## 🚀 Fitur Utama
 
 <div align="center">
-  <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse; border-color: #4CAF50; width: 90%;">
-    <tr align="center">
-      <th style="background-color: #4CAF50; color: white;">Fitur</th>
-      <th style="background-color: #4CAF50; color: white;">Deskripsi</th>
-    </tr>
-    <tr align="center">
-      <td>🧾 <b>Wallet Management</b></td>
-      <td>Buat, import, list, export, delete, change wallet default.</td>
-    </tr>
-    <tr align="center">
-      <td>💸 <b>Send ETH</b></td>
-      <td>Kirim ETH dengan auto-detect saldo, mode manual & kirim max, input ETH atau USD (auto konversi).</td>
-    </tr>
-    <tr align="center">
-      <td>🪙 <b>Send Token</b></td>
-      <td>Kirim ERC-20 dengan auto-detect saldo, mode manual & kirim max.</td>
-    </tr>
-    <tr align="center">
-      <td>🧪 <b>EIP-7702</b></td>
-      <td>Delegasikan EOA, batalkan delegasi, rescue assets.</td>
-    </tr>
-    <tr align="center">
-      <td>🧩 <b>Batch Call</b></td>
-      <td>Deploy kontrak <code>batch</code>, hanya wallet deployer yang bisa mengeksekusi batch call.</td>
-    </tr>
-    <tr align="center">
-      <td>🛟 <b>Rescue Atomic</b></td>
-      <td>Deploy kontrak <code>rescue</code> dengan <code>RESCUER</code>, hanya wallet sponsor yang bisa memanggil rescue. Sponsor membayar gas, target hanya tanda tangan authorization.</td>
-    </tr>
-    <tr align="center">
-      <td>🔄 <b>Revoke Delegation</b></td>
-      <td>Batalkan delegasi EIP-7702, sponsor membayar gas, auto-detect saldo sponsor.</td>
-    </tr>
-    <tr align="center">
-      <td>🎁 <b>Claim Airdrop (Delegation)</b></td>
-      <td>Klaim airdrop via EIP-7702 dengan sponsor, reward otomatis dikirim ke SAFE.</td>
-    </tr>
-    <tr align="center">
-      <td>✅ <b>Auto-Verify Sourcify</b></td>
-      <td>Deploy otomatis diverifikasi ke Sourcify (gratis, tanpa API key).</td>
-    </tr>
-    <tr align="center">
-      <td>🌐 <b>Change Network</b></td>
-      <td>Pilih, tambah, hapus network RPC secara interaktif, auto-deteksi chain ID.</td>
-    </tr>
-    <tr align="center">
-      <td>ℹ️ <b>Info Wallet</b></td>
-      <td>Lihat saldo, nonce, kode akun, dan perkiraan authorization nonce.</td>
-    </tr>
-    <tr align="center">
-      <td>🧙 <b>Wizard Deploy</b></td>
-      <td>Buat & deploy kontrak ERC-20 (Mint/Burn/Pause/Roles/Permit/Flash, UUPS), ERC-721, ERC-1155 dari template.</td>
-    </tr>
-    <tr align="center">
-      <td>⛽ <b>Gas Fee</b></td>
-      <td>Cek estimasi gas fee & ubah kecepatan default gas (slow/normal/fast/auto/manual).</td>
-    </tr>
-    <tr align="center">
-      <td>⛏️ <b>Mining POW</b></td>
-      <td>Claim ETH via PoW mining (PK910 Sepolia Faucet). Auto-delegate EIP-7702 setelah claim. Checkpoint claim di 0.05 ETH.</td>
-    </tr>
-  </table>
+
+| Icon | Fitur | Deskripsi | Status |
+|:----:|:------|:----------|:------:|
+| 🧾 | **Wallet Management** | Buat, import, list, export, delete wallet | ✅ |
+| 💸 | **Send ETH** | Kirim ETH dengan auto-detect saldo, mode manual & kirim max | ✅ |
+| 🪙 | **Send Token** | Kirim ERC-20 dengan auto-detect saldo, mode manual & kirim max | ✅ |
+| 🧪 | **EIP-7702** | Delegasikan EOA, batalkan delegasi, rescue assets | ✅ |
+| 🧩 | **Batch Call** | Deploy & eksekusi batch call | ✅ |
+| 🛟 | **Rescue Atomic** | Rescue aset dari wallet terkunci | ✅ |
+| 🔄 | **Revoke Delegation** | Batalkan delegasi EIP-7702 | ✅ |
+| 🎁 | **Claim Airdrop** | Klaim airdrop via EIP-7702 | ✅ |
+| ✅ | **Auto-Verify** | Verifikasi otomatis ke Sourcify | ✅ |
+| 🌐 | **Change Network** | Pilih & kelola network | ✅ |
+| ℹ️ | **Info Wallet** | Lihat saldo, nonce, kode akun | ✅ |
+| 🧙 | **Wizard Deploy** | Deploy kontrak dari template (ERC-20/721/1155) | ✅ |
+| ⛽ | **Gas Fee** | Cek & ubah gas fee | ✅ |
+| ⛏️ | **Mining POW** | Claim ETH via PoW mining (PK910) | ✅ |
+| 🔐 | **Approval Manager** | Cek & revoke ERC-20 approval aktif | ✅ |
+| 🛡️ | **Mainnet Safety** | Warning konfirmasi transaksi di mainnet | ✅ |
+
 </div>
 
 ---
 
-## ⚙️ Instalasi
+## 🌐 Supported Networks
 
-```bash
-git clone https://github.com/nemoobc/EIP-7702-TOOL.git
-cd EIP-7702-TOOL
-npm install
-```
+<div align="center">
 
-Dependencies: `ethers` v6, `viem` v2, `chalk` v4, `ora` v5, `solc` v0.8.20
+| Network | Chain ID | Status | Catatan |
+|:--------|:--------:|:------:|:--------|
+| 🔴 **Ethereum Mainnet** | 1 | ✅ | Gunakan RPC berbayar |
+| 🟢 **Sepolia Testnet** | 11155111 | ✅ | Default, untuk testing |
+| 🔵 **Arbitrum One** | 42161 | ✅ | Layer 2 |
+| 🔴 **OP Mainnet** | 10 | ✅ | Optimism |
+| 🔵 **Base** | 8453 | ✅ | Coinbase L2 |
+| 🟣 **Polygon** | 137 | ✅ | Sidechain |
+| 🟡 **BNB Smart Chain** | 56 | ✅ | Binance |
+| ⚪ **Custom Network** | Any | ✅ | Tambah sendiri |
+
+</div>
 
 ---
 
-## 🖥️ Cara Pakai
+## 🖥️ Menu Interaktif
 
-Jalankan:
-
-```bash
-node EIP-7702-TOOL.js
 ```
-
-Menu interaktif:
-
-```text
 ┌──────────────────────────────────────────┐
 │        WALLET & EIP-7702 TOOL            │
 │ 1. Batch Call (Deploy + Execute)         │
@@ -153,9 +116,603 @@ Menu interaktif:
 │ 15. Wizard Deploy                        │
 │ 16. Gas Fee                              │
 │ 17. Mining POW                           │
+│ 18. Approval Manager                     │
 │ 0. Exit                                  │
 └──────────────────────────────────────────┘
 ```
+
+---
+
+## 📚 Penjelasan Fitur Lengkap
+
+### 🧾 1. Wallet Management
+
+Kelola wallet Ethereum secara lokal di komputer Anda.
+
+**Sub-fitur:**
+| Aksi | Deskripsi |
+|------|-----------|
+| **Create Wallet** | Buat wallet baru dengan password, tersimpan di `~/.wallet-cli/wallets/` |
+| **Import Wallet** | Import wallet dari private key atau mnemonic phrase |
+| **List Wallets** | Lihat semua wallet yang tersimpan |
+| **Export Private Key** | Tampilkan private key (untuk backup) |
+| **Delete Wallet** | Hapus wallet dari penyimpanan |
+| **Change Wallet** | Ganti wallet default |
+
+**Cara Pakai:**
+```
+1. Pilih menu 2-7 sesuai aksi yang diinginkan
+2. Ikuti instruksi di layar
+3. Wallet tersimpan secara lokal (tidak dikirim ke server)
+```
+
+**Keamanan:**
+- Private key disimpan lokal, tidak pernah dikirim ke mana pun
+- File wallet di-encrypt dengan password
+- Selalu backup folder `wallets/`
+
+---
+
+### 💸 2. Send ETH
+
+Kirim ETH ke alamat lain dengan fitur lengkap.
+
+**Fitur:**
+- ✅ Auto-detect saldo wallet
+- ✅ Mode manual (input jumlah)
+- ✅ Mode kirim MAX (semua saldo dikurangi gas)
+- ✅ Input dalam ETH atau USD (auto konversi)
+- ✅ Auto-estimate gas fee
+- ✅ Support EIP-1559 (maxFeePerGas, maxPriorityFeePerGas)
+
+**Cara Pakai:**
+```
+1. Pilih menu 10. Send ETH
+2. Pilih wallet
+3. Masukkan alamat penerima
+4. Pilih mode (manual/MAX)
+5. Masukkan jumlah (ETH atau USD)
+6. Konfirmasi transaksi
+7. Tunggu konfirmasi
+```
+
+**Contoh:**
+```
+Pilih menu: 10
+Wallet: 0x1234...5678
+Ke: 0xABCD...9999
+Mode: 1 (Manual)
+Jumlah: 0.5 ETH
+Gas: ~0.002 ETH
+
+✅ Transaksi berhasil!
+TX Hash: 0xabc123...
+```
+
+---
+
+### 🪙 3. Send Token
+
+Kirim token ERC-20 ke alamat lain.
+
+**Fitur:**
+- ✅ Auto-detect saldo token
+- ✅ Auto-detect decimal token
+- ✅ Mode manual (input jumlah)
+- ✅ Mode kirim MAX (semua saldo token)
+- ✅ Support semua token ERC-20
+
+**Cara Pakai:**
+```
+1. Pilih menu 11. Send Token
+2. Pilih wallet
+3. Masukkan alamat kontrak token
+4. Masukkan alamat penerima
+5. Pilih mode (manual/MAX)
+6. Masukkan jumlah token
+7. Konfirmasi transaksi
+```
+
+**Contoh:**
+```
+Pilih menu: 11
+Wallet: 0x1234...5678
+Token: 0xdAC17F958D2ee523a2206206994597C13D831ec7 (USDT)
+Ke: 0xABCD...9999
+Mode: 1 (Manual)
+Jumlah: 1000 USDT
+Gas: ~0.003 ETH
+
+✅ Transaksi berhasil!
+TX Hash: 0xdef456...
+```
+
+---
+
+### 🧪 4. EIP-7702 Operations
+
+Operasi terkait standar EIP-7702 untuk delegasi EOA.
+
+**Sub-fitur:**
+| Aksi | Deskripsi |
+|------|-----------|
+| **Delegate** | Delegasikan EOA ke kontrak implementasi |
+| **Revoke** | Batalkan delegasi EIP-7702 |
+| **Rescue** | Rescue aset dari wallet terkunci |
+
+**Cara Kerja Delegate:**
+```
+1. Deploy kontrak implementasi (atau pakai yang sudah ada)
+2. Sign authorization (type: 4 tx)
+3. Kirim ke network
+4. Sekarang wallet bisa jalankan kode kontrak
+```
+
+**Cara Kerja Revoke:**
+```
+1. Sign revoke authorization
+2. Kirim transaksi
+3. Wallet kembali normal (EOA biasa)
+```
+
+---
+
+### 🧩 5. Batch Call
+
+Eksekusi beberapa transaksi dalam satu transaksi.
+
+**Fitur:**
+- ✅ Deploy kontrak batch
+- ✅ Eksekusi batch call
+- ✅ Hanya deployer yang bisa eksekusi
+
+**Contoh Use Case:**
+```
+Kirim ETH + Transfer Token + Revoke Approval
+         ↓                    ↓              ↓
+    Semua jadi SATU transaksi
+```
+
+**Cara Pakai:**
+```
+1. Pilih menu 1. Batch Call
+2. Pilih wallet
+3. Input list aksi yang mau dilakukan
+4. Review & konfirmasi
+5. Eksekusi batch
+```
+
+---
+
+### 🛟 6. Rescue Atomic
+
+Rescue aset dari wallet yang terkunci secara atomic.
+
+**Fitur:**
+- ✅ Deploy kontrak rescue
+- ✅ Hanya sponsor yang bisa memanggil rescue
+- ✅ Target hanya sign authorization
+- ✅ Gas dibayar sponsor
+
+**Cara Kerja:**
+```
+Kasus: Wallet terkunci tapi ada aset di dalamnya
+
+1. Deploy kontrak rescue dengan hak akses khusus
+2. Sponsor bayar gas
+3. Target sign authorization
+4. Aset dipindahkan ke wallet lain secara atomic
+```
+
+**Cara Pakai:**
+```
+1. Pilih menu 8. Rescue Assets
+2. Pilih mode (Rescue ETH/ERC20/ERC721)
+3. Masukkan data yang diperlukan
+4. Deploy kontrak rescue
+5. Eksekusi rescue
+```
+
+---
+
+### 🔄 7. Revoke Delegation
+
+Batalkan delegasi EIP-7702.
+
+**Fitur:**
+- ✅ Batalkan delegasi EIP-7702
+- ✅ Sponsor membayar gas
+- ✅ Auto-detect saldo sponsor
+
+**Cara Pakai:**
+```
+1. Pilih menu 9. Revoke Delegation
+2. Masukkan alamat wallet korban
+3. Masukkan private key korban
+4. Pilih sponsor (opsional)
+5. Konfirmasi transaksi
+```
+
+---
+
+### 🎁 8. Claim Airdrop (Delegation)
+
+Klaim airdrop via EIP-7702 dengan sponsor.
+
+**Fitur:**
+- ✅ Klaim airdrop via EIP-7702
+- ✅ Sponsor membayar gas
+- ✅ Reward otomatis dikirim ke SAFE
+
+**Cara Pakai:**
+```
+1. Pilih menu 14. Claim Airdrop
+2. Pilih wallet
+3. Masukkan data airdrop
+4. Pilih sponsor
+5. Konfirmasi transaksi
+```
+
+---
+
+### ✅ 9. Auto-Verify Sourcify
+
+Verifikasi otomatis kontrak ke Sourcify.
+
+**Fitur:**
+- ✅ Verifikasi otomatis setelah deploy
+- ✅ Gratis tanpa API key
+- ✅ Support semua chain
+
+**Cara Kerja:**
+```
+1. Deploy kontrak
+2. Otomatis verifikasi ke Sourcify
+3. Kontrak diverifikasi dan bisa diakses publik
+```
+
+---
+
+### 🌐 10. Change Network
+
+Kelola network RPC.
+
+**Fitur:**
+- ✅ Pilih network aktif
+- ✅ Tambah network baru
+- ✅ Hapus network
+- ✅ Lihat daftar network
+- ✅ Auto-detect chain ID
+
+**Cara Pakai:**
+```
+1. Pilih menu 13. Network
+2. Pilih aksi:
+   - 1. Pilih Network Aktif
+   - 2. Tambah Network Baru
+   - 3. Hapus Network
+   - 4. Lihat Daftar Network
+3. Ikuti instruksi di layar
+```
+
+**Contoh Tambah Network:**
+```
+Pilih menu: 13
+Aksi: 2 (Tambah Network)
+Nama: My Custom Network
+RPC URL: https://my-rpc.example.com
+Chain ID: 12345
+
+✅ Network berhasil ditambahkan!
+```
+
+---
+
+### ℹ️ 11. Info Wallet
+
+Lihat informasi lengkap wallet.
+
+**Informasi yang Ditampilkan:**
+- ✅ Address
+- ✅ ETH Balance (dengan nilai USD)
+- ✅ Account Nonce
+- ✅ Next auth nonce (self & sponsor)
+- ✅ Network (Chain ID)
+- ✅ Kode akun (EOA atau delegated)
+
+**Cara Pakai:**
+```
+1. Pilih menu 12. Info Wallet
+2. Pilih wallet
+3. Lihat informasi lengkap
+```
+
+**Contoh Tampilan:**
+```
+┌───────────────────────────────────────────┐
+│ INFO WALLET                               │
+├───────────────────────────────────────────┤
+│ Address: 0x1234...5678                    │
+│ ETH Balance: 0.5234 ETH ($1,234.56)      │
+│ Account Nonce: 42                         │
+│ Next auth nonce (self): 43                │
+│ Next auth nonce (sponsor): 42             │
+│ Network: sepolia (Chain ID: 11155111)     │
+│ Kode Akun: EOA (tidak terdelegasi)        │
+└───────────────────────────────────────────┘
+```
+
+---
+
+### 🧙 12. Wizard Deploy
+
+Buat & deploy smart contract dari template.
+
+**Template yang Tersedia:**
+
+#### ERC-20 (Token)
+- ✅ Basic ERC-20
+- ✅ Mintable
+- ✅ Burnable
+- ✅ Pausable
+- ✅ Roles (Ownable + AccessControl)
+- ✅ Permit (EIP-2612)
+- ✅ Flash Minting
+- ✅ UUPS Proxy
+
+#### ERC-721 (NFT)
+- ✅ Basic ERC-721
+- ✅ ERC721A (batch mint)
+
+#### ERC-1155 (Multi-Token)
+- ✅ Basic ERC-1155
+
+**Cara Pakai:**
+```
+1. Pilih menu 15. Wizard Deploy
+2. Pilih tipe kontrak (ERC-20/721/1155)
+3. Pilih fitur yang diinginkan
+4. Masukkan parameter (name, symbol, dll)
+5. Deploy kontrak
+6. Otomatis verifikasi ke Sourcify
+```
+
+**Contoh Deploy ERC-20:**
+```
+Pilih menu: 15
+Tipe: ERC-20
+Fitur: Mintable, Burnable, Pausable, Roles
+Name: MyToken
+Symbol: MTK
+Decimals: 18
+Initial Supply: 1000000
+
+✅ Kontrak berhasil di-deploy!
+Address: 0xABC...123
+TX Hash: 0xDEF...456
+```
+
+---
+
+### ⛽ 13. Gas Fee
+
+Cek & ubah pengaturan gas fee.
+
+**Fitur:**
+- ✅ Cek estimasi gas fee
+- ✅ Ubah kecepatan gas (slow/normal/fast/auto/manual)
+- ✅ Lihat gas price saat ini
+
+**Mode Gas:**
+| Mode | Deskripsi |
+|------|-----------|
+| **Slow** | Gas rendah, transaksi lambat |
+| **Normal** | Gas sedang, transaksi normal |
+| **Fast** | Gas tinggi, transaksi cepat |
+| **Auto** | Otomatis sesuai kondisi jaringan |
+| **Manual** | Input gas fee sendiri |
+
+**Cara Pakai:**
+```
+1. Pilih menu 16. Gas Fee
+2. Pilih aksi:
+   - 1. Cek Gas Fee
+   - 2. Ubah Gas Fee
+3. Pilih mode gas
+4. Konfirmasi
+```
+
+---
+
+### ⛏️ 14. Mining POW
+
+Claim ETH via PoW mining dari PK910 Sepolia Faucet.
+
+**Fitur:**
+- ✅ Mining dengan algoritma CryptoNight
+- ✅ Checkpoint claim di 0.05 ETH
+- ✅ Target default 2.5 ETH
+- ✅ Auto-delegate EIP-7702 setelah claim
+- ✅ Tampilan real-time: hashrate, nonce, balance, shares
+
+**Cara Pakai:**
+
+**Session baru:**
+```
+1. Pilih menu 17. Mining POW
+2. Pilih 1) Session baru (butuh CAPTCHA token)
+3. Masukkan CAPTCHA token dari website PK910
+4. Mining akan dimulai secara otomatis
+```
+
+**Resume session:**
+```
+1. Pilih menu 17. Mining POW
+2. Pilih 2) Resume session (session ID)
+3. Masukkan session ID yang tersimpan
+```
+
+**Contoh Tampilan:**
+```
+⛏️  PoW Mining
+   Algoritma : cryptonight
+   Difficulty: 10
+   Target    : 2.5 ETH
+──────────────────────────────────────────────────
+   ⚡ 2 H/s | nonce 153 | 0.008 ETH | 0 shares
+```
+
+**Catatan:**
+- Solver CryptoNight dipasang sebagai optional dependency native
+- Jalankan `npm install --include=optional`
+- Dependency berlisensi GPL-3.0-or-later
+
+---
+
+### 🔐 15. Approval Manager
+
+Kelola ERC-20 approval aktif pada wallet.
+
+**Fitur:**
+- ✅ Scan semua approval aktif dari 20 token populer
+- ✅ Pilih approval mana yang mau di-revoke (Revoke Selected)
+- ✅ Revoke semua approval sekaligus (Revoke All)
+- ✅ Mode pembayaran gas:
+  - **Self Revoke** — Owner bayar gas sendiri
+  - **Sponsor Revoke** — Sponsor bayar gas, owner hanya sign
+
+**Cara Pakai:**
+```
+1. Pilih menu 18. Approval Manager
+2. Pilih wallet
+3. Tunggu scanning selesai
+4. Pilih approval mana yang mau di-revoke (y/n)
+5. Pilih mode gas (Self/Sponsor)
+6. Konfirmasi transaksi
+```
+
+**Token yang Di-scan:**
+USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, FIL, CRV, SNX, SUSHI, COMP, MKR, LDO
+
+**Contoh Tampilan:**
+```
+┌──────────────────────────────────────────┐
+│ APPROVAL MANAGER                         │
+│ Cek & revoke semua ERC-20 approval aktif │
+└──────────────────────────────────────────┘
+
+  Wallet: 0x1234...5678
+  Scanning approval...
+
+  Ditemukan 5 approval aktif:
+
+  ☑ USDT   Allowance: 999,999.00      ← REVOKE
+  ☑ WETH   Allowance: 5.0             ← REVOKE
+  ☐ DAI    Allowance: 1,000.0
+  ☑ UNI    Allowance: 100.0           ← REVOKE
+  ☐ LINK   Allowance: 50.0
+
+  3 approval akan di-revoke.
+
+  Pilih mode pembayaran gas:
+    1) Self — bayar gas sendiri
+    2) Sponsor — sponsor bayar gas
+```
+
+**Mengapa Penting:**
+- Mencegah serangan drainer yang menggunakan approval lama
+- Bersihkan approval yang tidak digunakan
+- Tingkatkan keamanan wallet
+
+---
+
+### 🛡️ 16. Mainnet Safety
+
+Fitur keamanan untuk penggunaan di mainnet.
+
+**Fitur:**
+- ✅ **Auto-Detect Chain** — Otomatis deteksi jaringan dan tampilkan status
+- ✅ **Warning Konfirmasi** — Minta konfirmasi sebelum eksekusi transaksi di mainnet
+- ✅ **RPC Recommendation** — Rekomendasi RPC provider untuk mainnet (Alchemy, QuickNode)
+
+**Kapan Muncul:**
+- **Network Status** — Setiap kali pilih fitur kirim transaksi
+- **RPC Recommendation** — Saat di mainnet + pakai RPC publik
+- **Confirm TX** — Sebelum eksekusi transaksi di mainnet
+
+**Contoh Network Status:**
+```
+┌───────────────────────────────────────────┐
+│ NETWORK STATUS                            │
+│ Chain ID    : 1                           │
+│ Network     : Ethereum Mainnet            │
+│ Status      : 🔴 MAINNET (UANG NYATA)     │
+│ RPC Provider: ethereum-rpc.publicnode.com │
+└───────────────────────────────────────────┘
+  ⚠️  Anda di MAINNET — semua transaksi menggunakan uang NYATA!
+  💡 RPC publik mungkin tidak stabil. Rekomendasi: Alchemy / QuickNode
+```
+
+**Contoh Warning Konfirmasi:**
+```
+  ╔═══════════════════════════════════════════════════╗
+  ║  ⚠️  PERINGATAN MAINNET                         ║
+  ╚═══════════════════════════════════════════════════╝
+
+  Anda sedang di: Ethereum Mainnet (chainId: 1)
+  ⚡ Ini adalah jaringan NYATA dengan uang NYATA!
+
+  ┌─────────────────────────────────────────────────┐
+  │ Dari : 0x1234...5678
+  │ Ke   : 0xABCD...9999
+  │ Jumlah: 0.5 ETH ($1,200.00)
+  └─────────────────────────────────────────────────┘
+
+  Ketik "YA" untuk konfirmasi:
+```
+
+---
+
+## ⚠️ Catatan Penting
+
+<table>
+  <tr>
+    <td style="background-color: #ffcdd2; border-left: 5px solid #f44336; padding: 15px;">
+      <h3>🔴 WARNING</h3>
+      <ul>
+        <li>Jangan bagikan private key atau mnemonic.</li>
+        <li>Gunakan hanya di <b>Sepolia testnet</b> untuk testing.</li>
+        <li>Selalu buat wallet baru untuk testing, jangan gunakan wallet utama.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td style="background-color: #c8e6c9; border-left: 5px solid #4caf50; padding: 15px;">
+      <h3>💡 INFO</h3>
+      <ul>
+        <li>Tool ini sudah support <b>mainnet</b> dengan safety features.</li>
+        <li>Gunakan RPC berbayar (Alchemy/QuickNode) untuk mainnet.</li>
+        <li>Simpan kestore wallet di folder <code>wallets/</code> (privat).</li>
+      </ul>
+    </td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td style="background-color: #bbdefb; border-left: 5px solid #2196f3; padding: 15px;">
+      <h3>📌 TIP</h3>
+      <ul>
+        <li>Pastikan wallet sponsor memiliki cukup ETH untuk gas.</li>
+        <li>Beberapa RPC publik mungkin tidak mendukung transaksi <code>type: 4</code>.</li>
+        <li>Gunakan RPC berbayar seperti Alchemy/QuickNode jika perlu.</li>
+      </ul>
+    </td>
+  </tr>
+</table>
 
 ---
 
@@ -191,35 +748,74 @@ Address wallet test harus dicetak oleh runner test—jangan menaruh private key 
 
 ---
 
-## ⛏️ Mining POW (PK910 Sepolia Faucet)
+## ❓ FAQ
 
-Tool menyediakan fitur **Mining POW** untuk claim ETH via PoW mining dari **PK910 Sepolia Faucet**. CAPTCHA tetap harus diperoleh melalui flow resmi PK910; tool ini hanya menjalankan PoW dan claim setelah session/token yang sah tersedia.
+**Q: Apakah tool ini aman digunakan di mainnet?**
 
-### Cara Pakai
+A: Ya, dengan catatan:
+- Selalu perhatikan warning konfirmasi sebelum transaksi
+- Gunakan RPC berbayar (Alchemy/QuickNode)
+- Jangan share private key
 
-**Session baru:**
-1. Pilih menu `17. Mining POW`
-2. Pilih `1) Session baru (butuh CAPTCHA token)`
-3. Masukkan CAPTCHA token dari website PK910
-4. Mining akan dimulai secara otomatis
+**Q: Bagaimana cara backup wallet?**
 
-**Resume session:**
-1. Pilih menu `17. Mining POW`
-2. Pilih `2) Resume session (session ID)`
-3. Masukkan session ID yang tersimpan
+A: Wallet tersimpan di `~/.wallet-cli/wallets/`. Backup folder ini.
 
-### Fitur
-- Mining dengan algoritma CryptoNight
-- Checkpoint claim di **0.05 ETH** (opsi claim atau lanjut mining)
-- Target default **2.5 ETH** (maksimal dari PK910)
-- Auto-delegate EIP-7702 setelah claim
-- Tampilan real-time: hashrate, nonce, balance, shares
+**Q: Apakah support hardware wallet (Ledger/Trezor)?**
 
-### Catatan
-- Solver CryptoNight dipasang sebagai optional dependency native
-- Jalankan `npm install --include=optional` dan pastikan toolchain `node-gyp` tersedia
-- Dependency berlisensi GPL-3.0-or-later; periksa kewajiban lisensi sebelum distribusi
-- Client tidak melakukan bypass CAPTCHA, rate-limit, atau anti-bot PK910
+A: Belum. Saat ini hanya support software wallet (JSON keystore).
+
+**Q: Kenapa transaksi gagal di mainnet?**
+
+A: Kemungkinan:
+- RPC publik rate-limited → Ganti ke RPC berbayar
+- Gas fee tidak cukup → Cek saldo
+- EIP-7702 tidak didukung → Cek RPC provider
+
+**Q: Bagaimana cara revoke approval?**
+
+A: Pilih menu `18. Approval Manager`, pilih wallet, lalu pilih approval yang mau di-revoke.
+
+**Q: Berapa banyak token yang di-scan di Approval Manager?**
+
+A: Saat ini 20 token populer (USDT, USDC, DAI, WETH, dll). Bisa ditambah jika diperlukan.
+
+**Q: Apakah support multiple chain?**
+
+A: Ya! Support Ethereum Mainnet, Sepolia, Arbitrum, Optimism, Base, Polygon, BSC, dan custom network.
+
+---
+
+## 🔧 Troubleshooting
+
+| Error | Solusi |
+|-------|--------|
+| `RPC provider does not support EIP-7702` | Ganti RPC provider ke Alchemy/QuickNode |
+| `Insufficient funds for gas` | Pastikan wallet memiliki saldo ETH yang cukup |
+| `Transaction nonce too low` | Tunggu beberapa detik, lalu coba lagi |
+| `Solver CryptoNight belum tersedia` | Jalankan `npm install @leocuvee/cryptonight-hashing` |
+| `Password salah atau file wallet rusak` | Cek password, atau buat wallet baru |
+| `Session tidak ditemukan` | Session sudah expired, buat session baru |
+| `Allocation failed` | Tidak ada token yang di-approval ke wallet ini |
+
+---
+
+## 📝 Changelog
+
+### v3.1.0 (2024-XX-XX)
+- ✅ **Added:** Approval Manager (revoke ERC-20 approvals)
+- ✅ **Added:** Mainnet Safety Features (warning, RPC recommendation)
+- ✅ **Fixed:** Mining display text overlap
+
+### v3.0.0
+- ✅ Initial release
+- ✅ Wallet management
+- ✅ Send ETH/Token
+- ✅ EIP-7702 operations
+- ✅ Batch Call
+- ✅ Rescue Assets
+- ✅ Mining POW
+- ✅ Wizard Deploy
 
 ---
 
@@ -233,22 +829,13 @@ Terima kasih! 🙏
 
 ---
 
-## ⚠️ Catatan Penting
+## 📜 Lisensi
 
-- Jangan bagikan private key atau mnemonic.
-- Gunakan hanya di **Sepolia testnet** untuk testing.
-- Selalu buat wallet baru untuk testing, jangan gunakan wallet utama.
-- Pastikan wallet sponsor memiliki cukup ETH untuk gas.
-- Beberapa RPC publik mungkin tidak mendukung transaksi `type: 4`. Gunakan RPC berbayar seperti Alchemy/QuickNode jika perlu.
-- Simpan kestore wallet di folder `wallets/` (privat).
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
-## 📜 Lisensi
-
-Proyek ini menggunakan lisensi **MIT**.
-
 <p align="center">
   <b>Dibuat dengan ❤️ dan ☕</b><br>
-  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=22&pause=1000&color=00FF00&center=true&vCenter=true&width=500&lines=Selamat+menggunakan+EIP-7702+Tool!;Semoga+bermanfaat+untuk+Ethereum" alt="Footer Typing SVG" />
+  <img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&size=22&pause=1000&color=00FF00&center=true&vCenter=true&width=500&lines=Selamat+menggunakan+EIP-7702+Tool!;Semoga+bermanfaat+untuk+Ethereum" alt="Typing SVG" />
 </p>

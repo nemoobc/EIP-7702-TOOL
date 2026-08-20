@@ -178,6 +178,92 @@ async function getIpInfo(){
   return null;
 }
 
+// ================= MAINNET SAFETY =================
+const MAINNET_CHAIN_IDS = [1];
+const TESTNET_CHAIN_IDS = [11155111, 5, 11155112, 80001];
+function isMainnet(chainId) { return MAINNET_CHAIN_IDS.includes(Number(chainId)); }
+function isTestnet(chainId) { return TESTNET_CHAIN_IDS.includes(Number(chainId)); }
+function getNetworkStatusEmoji(chainId) {
+  if (isMainnet(chainId)) return '🔴';
+  if (isTestnet(chainId)) return '🟢';
+  return '🟡';
+}
+function getNetworkStatusLabel(chainId) {
+  if (isMainnet(chainId)) return 'MAINNET (UANG NYATA)';
+  if (isTestnet(chainId)) return 'TESTNET (Testing)';
+  return 'UNKNOWN (Hati-hati)';
+}
+async function showNetworkStatus() {
+  const c = loadConfig();
+  const chainId = Number(c.chainId);
+  const emoji = getNetworkStatusEmoji(chainId);
+  const label = getNetworkStatusLabel(chainId);
+  console.log();
+  printBox('NETWORK STATUS', [
+    `Chain ID    : ${chainId}`,
+    `Network     : ${c.networkName}`,
+    `Status      : ${emoji} ${label}`,
+    `RPC Provider: ${c.rpcUrl.replace(/https?:\/\//, '').slice(0, 40)}`,
+  ]);
+  if (isMainnet(chainId)) {
+    console.log(chalk.red.bold('  ⚠️  Anda di MAINNET — semua transaksi menggunakan uang NYATA!'));
+  }
+}
+async function suggestRpcProvider() {
+  const c = loadConfig();
+  const chainId = Number(c.chainId);
+  if (!isMainnet(chainId)) return;
+  const rpcHost = c.rpcUrl.replace(/https?:\/\//, '').split('/')[0];
+  const isPublic = rpcHost.includes('publicnode') || rpcHost.includes('rpc.org') || rpcHost.includes('cloudflare');
+  if (!isPublic) return;
+  console.log();
+  console.log(chalk.yellow('  💡 RPC publik mungkin tidak stabil. Rekomendasi: Alchemy / QuickNode'));
+  const choice = await ask(chalk.yellow('  Pilihan (1/2/3 = Ganti RPC, Enter = Pakai yang sekarang): '));
+  if (choice === '1' || choice === '2' || choice === '3') {
+    const rpcUrls = {
+      '1': 'https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY',
+      '2': 'https://eth-mainnet.quiknode.pro/YOUR_API_KEY',
+      '3': `https://mainnet.infura.io/v3/YOUR_API_KEY`,
+    };
+    const newRpc = await ask(chalk.cyan(`  Masukkan RPC URL Alchemy: `));
+    if (newRpc && newRpc.startsWith('http')) {
+      c.rpcUrl = newRpc;
+      saveConfig(c);
+      console.log(chalk.green('  ✅ RPC berhasil diganti!'));
+    } else {
+      console.log(chalk.red('  ❌ URL tidak valid, RPC tidak diganti.'));
+    }
+  } else {
+    console.log(chalk.gray('  Menggunakan RPC yang sekarang.'));
+  }
+}
+async function confirmMainnetTx(actionDesc, details) {
+  const c = loadConfig();
+  const chainId = Number(c.chainId);
+  if (!isMainnet(chainId)) return true;
+  console.log();
+  console.log(chalk.red.bold('  ╔═══════════════════════════════════════════════════╗'));
+  console.log(chalk.red.bold('  ║  ⚠️  PERINGATAN MAINNET                         ║'));
+  console.log(chalk.red.bold('  ╚═══════════════════════════════════════════════════╝'));
+  console.log();
+  console.log(chalk.yellow(`  Anda sedang di: ${c.networkName} (chainId: ${chainId})`));
+  console.log(chalk.red.bold('  ⚡ Ini adalah jaringan NYATA dengan uang NYATA!'));
+  console.log(chalk.red.bold('  ⚡ Pastikan semua data sudah benar!'));
+  console.log();
+  if (details && details.length > 0) {
+    console.log(chalk.cyan('  ┌─────────────────────────────────────────────────┐'));
+    details.forEach(d => console.log(chalk.cyan('  │ ') + d));
+    console.log(chalk.cyan('  └─────────────────────────────────────────────────┘'));
+  }
+  console.log();
+  const confirm = await ask(chalk.yellow('  Ketik "YA" untuk konfirmasi: '));
+  if (confirm !== 'YA' && confirm !== 'ya') {
+    console.log(chalk.red('  ❌ Transaksi DIBATALKAN.'));
+    return false;
+  }
+  return true;
+}
+
 // ================= INPUT =================
 function ask(q){ const rl=readline.createInterface({input:process.stdin,output:process.stdout}); return new Promise(res=>rl.question(q,a=>{rl.close();res(a.trim());})); }
 function askPassword(prompt='🔒 Password: '){
@@ -768,6 +854,9 @@ async function getGasSettings(provider,speed='auto'){
   return {maxFeePerGas:baseFee*mult/100n,maxPriorityFeePerGas:basePriority*mult/100n};
 }
 async function actionSendEth(){
+  clearScreen();
+  await showNetworkStatus();
+  await suggestRpcProvider();
   let walletId; try{walletId=await promptWalletSelection();}catch(e){printResult('Kirim ETH',[e.message]);return;}
   const password=await getPassword();
   let wallet, provider, signer;
@@ -819,6 +908,13 @@ async function actionSendEth(){
     if(price) amountDisplay+=' ($'+(parseFloat(ethers.formatEther(value))*price).toFixed(2)+')';
     console.log(chalk.cyan('Mengirim MAX: '+amountDisplay));
   }else{console.log(chalk.red('Pilihan tidak valid.'));return;}
+  const confirmed = await confirmMainnetTx('Send ETH', [
+    `Dari : ${wallet.address}`,
+    `Ke   : ${toAddress}`,
+    `Jumlah: ${amountDisplay}`,
+    `Gas  : ~${ethers.formatEther(gasCost)} ETH`,
+  ]);
+  if (!confirmed) return;
   const spinner=ora(chalk.blue('Mengirim ETH...')).start();
   try{
     const tx=await signer.sendTransaction({to:toAddress,value,gasLimit,maxFeePerGas:gasSettings.maxFeePerGas,maxPriorityFeePerGas:gasSettings.maxPriorityFeePerGas});
@@ -829,6 +925,8 @@ async function actionSendEth(){
 }
 async function actionSendToken(){
   clearScreen();
+  await showNetworkStatus();
+  await suggestRpcProvider();
   printBox('SEND ERC20 TOKEN',['Kirim token ERC-20 dengan auto-detect saldo']);
   let walletId; try{walletId=await promptWalletSelection();}catch(e){printResult('Send Token',[e.message]);return;}
   const password=await getPassword();
@@ -849,6 +947,13 @@ async function actionSendToken(){
   if(mode==='1'){const input=await ask(chalk.cyan('Jumlah token: ')); amountWei=ethers.parseUnits(input,decimals);}
   else if(mode==='2'){amountWei=tokenBalance; console.log(chalk.cyan('Mengirim MAX: '+ethers.formatUnits(amountWei,decimals)));}
   else{console.log(chalk.red('Pilihan tidak valid.'));return;}
+  const tokenConfirmed = await confirmMainnetTx('Send Token', [
+    `Dari : ${wallet.address}`,
+    `Ke   : ${to}`,
+    `Token: ${tokenAddress}`,
+    `Jumlah: ${ethers.formatUnits(amountWei,decimals)}`,
+  ]);
+  if (!tokenConfirmed) return;
   const spinner=ora(chalk.blue('Mengirim token...')).start();
   try{
     const tx=await tokenContract.connect(signer).transfer(to,amountWei);
@@ -929,7 +1034,10 @@ async function actionNetwork(){
 
 // ================= FITUR EIP-7702 =================
 async function featureBatchCall(){
-  clearScreen(); printBox('BATCH CALL',['Deploy batch + execute batch call']);
+  clearScreen();
+  await showNetworkStatus();
+  await suggestRpcProvider();
+  printBox('BATCH CALL',['Deploy batch + execute batch call']);
   const mode=await ask(chalk.cyan('Gunakan wallet tersimpan? (y/n): '));
   let targetPrivateKey,targetAddress;
   if(mode.toLowerCase()==='y'){
@@ -996,7 +1104,10 @@ async function featureBatchCall(){
 }
 
 async function featureRescue(){
-  clearScreen(); printBox('RESCUE ASSETS',['Deploy rescue + rescue ETH/ERC20/ERC721']);
+  clearScreen();
+  await showNetworkStatus();
+  await suggestRpcProvider();
+  printBox('RESCUE ASSETS',['Deploy rescue + rescue ETH/ERC20/ERC721']);
   const mode=await ask(chalk.cyan('Gunakan wallet tersimpan? (y/n): '));
   let targetPrivateKey,targetAddress;
   if(mode.toLowerCase()==='y'){
@@ -1099,7 +1210,10 @@ async function featureRescue(){
 }
 
 async function featureRevoke(){
-  clearScreen(); printBox('REVOKE DELEGATION',['Batalkan delegasi EIP-7702.']);
+  clearScreen();
+  await showNetworkStatus();
+  await suggestRpcProvider();
+  printBox('REVOKE DELEGATION',['Batalkan delegasi EIP-7702.']);
   const address=await ask(chalk.cyan('Alamat wallet korban (0x...): '));
   if(!/^0x[0-9a-fA-F]{40}$/.test(address)){console.log(chalk.red('Alamat invalid.'));return;}
   const victimPk=await askPassword(chalk.cyan('Private key korban: '));
@@ -1132,7 +1246,10 @@ async function featureRevoke(){
 }
 
 async function featureClaimAirdrop(){
-  clearScreen(); printBox('CLAIM AIRDROP (DELEGATION)',['Klaim airdrop via EIP-7702']);
+  clearScreen();
+  await showNetworkStatus();
+  await suggestRpcProvider();
+  printBox('CLAIM AIRDROP (DELEGATION)',['Klaim airdrop via EIP-7702']);
   const mode=await ask(chalk.cyan('Gunakan wallet tersimpan? (y/n): '));
   let targetPrivateKey,targetAddress;
   if(mode.toLowerCase()==='y'){
@@ -1668,14 +1785,14 @@ async function featureMiningPow() {
       if (pk910IsValidPowHash(hash, difficulty)) {
         sharesFound++;
         await socket.request('foundShare', { nonce, data: null, params, hashrate: hashes });
-        console.log('   🎯 Share #' + sharesFound + ': nonce ' + nonce + ' | hash ' + hash.slice(0, 14) + '…');
+        process.stdout.write('\n   🎯 Share #' + sharesFound + ': nonce ' + nonce + ' | hash ' + hash.slice(0, 14) + '…\n');
       }
       nonce++;
       if (lastVerificationError) throw lastVerificationError;
       if (Date.now() - lastReport >= 5000) {
         const elapsed = (Date.now() - startTime) / 1000;
         const hashrate = (hashes / Math.max(elapsed, 1)).toFixed(0);
-        console.log('   ⚡ ' + hashrate + ' H/s | nonce ' + nonce + ' | ' + formatEther(balance) + ' ETH | ' + sharesFound + ' shares');
+        process.stdout.write('\r   ⚡ ' + hashrate + ' H/s | nonce ' + nonce + ' | ' + formatEther(balance) + ' ETH | ' + sharesFound + ' shares' + ' '.repeat(10));
         lastReport = Date.now();
       }
       if (hashes % 250 === 0) await new Promise(r => setImmediate(r));
@@ -1686,7 +1803,7 @@ async function featureMiningPow() {
       // Checkpoint: tawarkan claim di 0.05 ETH
       if (!checkpointClaimed && balance >= CHECKPOINT_WEI) {
         checkpointClaimed = true;
-        console.log();
+        process.stdout.write('\n');
         console.log('   ⏸️  Checkpoint 0.05 ETH tercapai!');
         console.log('   1) Claim sekarang (mining berhenti)');
         console.log('   2) Skip, lanjut mining');
@@ -1714,7 +1831,7 @@ async function featureMiningPow() {
         }
       }
     }
-    console.log();
+    process.stdout.write('\n');
     console.log('✅ Target tercapai: ' + formatEther(balance) + ' ETH');
     console.log('─'.repeat(50));
     await socket.request('closeSession');
@@ -1776,6 +1893,136 @@ function pk910ParseTarget(value, maxClaim) {
   if (requested <= 0n) throw new Error('Target harus > 0.');
   if (requested > maxAllowed) throw new Error(`Target melebihi batas ${formatEther(maxAllowed)} ETH.`);
   return requested;
+}
+
+// ================= APPROVAL MANAGER =================
+const POPULAR_TOKENS = [
+  { symbol: 'USDT', address: '0xdAC17F958D2ee523a2206206994597C13D831ec7' },
+  { symbol: 'USDC', address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48' },
+  { symbol: 'DAI', address: '0x6B175474E89094C44Da98b954EedeAC495271d0F' },
+  { symbol: 'WETH', address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2' },
+  { symbol: 'WBTC', address: '0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599' },
+  { symbol: 'LINK', address: '0x514910771AF9Ca656af840dff83E8264EcF986CA' },
+  { symbol: 'UNI', address: '0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984' },
+  { symbol: 'AAVE', address: '0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9' },
+  { symbol: 'SHIB', address: '0x95aD61b0a150d79219dCF64E1E6Cc01f0B64C4cE' },
+  { symbol: 'MATIC', address: '0x7D1AfA7B718fb893dB30A3aBc0Cfc608AaCfeBB0' },
+  { symbol: 'ARB', address: '0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1' },
+  { symbol: 'OP', address: '0x4200000000000000000000000000000000000042' },
+  { symbol: 'PEPE', address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933' },
+  { symbol: 'FIL', address: '0xD533a949740bb3306d119CC777fa900bA034cd52' },
+  { symbol: 'CRV', address: '0xD533a949740bb3306d119CC777fa900bA034cd52' },
+  { symbol: 'SNX', address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F' },
+  { symbol: 'SUSHI', address: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2' },
+  { symbol: 'COMP', address: '0xc00e94Cb662C3520282E6f5717214004A7f26888' },
+  { symbol: 'MKR', address: '0x9f8F72aA9304c8B593d555F12eF6589cC3A579A2' },
+  { symbol: 'LDO', address: '0x5A98FcBEA516Cf06857215779Fd812CA3beF1B32' },
+];
+const ERC20_ABI = [
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function symbol() view returns (string)',
+  'function decimals() view returns (uint8)',
+  'function approve(address spender, uint256 amount) returns (bool)',
+];
+async function scanApprovals(walletAddress, provider) {
+  const results = [];
+  for (const token of POPULAR_TOKENS) {
+    try {
+      const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
+      const [symbol, allowance] = await Promise.all([
+        contract.symbol().catch(() => token.symbol),
+        contract.allowance(walletAddress, '0x0000000000000000000000000000000000000000').catch(() => null),
+      ]);
+      if (allowance !== null && allowance > 0n) {
+        results.push({ symbol, address: token.address, allowance, spender: '0x0000000000000000000000000000000000000000' });
+      }
+    } catch (e) { /* skip error */ }
+  }
+  return results;
+}
+async function featureApprovalManager() {
+  clearScreen();
+  await showNetworkStatus();
+  printBox('APPROVAL MANAGER', ['Cek & revoke semua ERC-20 approval aktif']);
+  let walletId;
+  try { walletId = await promptWalletSelection(); } catch (e) { printResult('Approval Manager', [e.message]); return; }
+  const password = await getPassword();
+  let wallet, provider;
+  try {
+    provider = getProvider();
+    wallet = await ethers.Wallet.fromEncryptedJson(fs.readFileSync(getWalletPathByIdentifier(walletId), 'utf8'), password);
+  } catch (e) { console.log(chalk.red('Password salah atau file wallet rusak.')); return; }
+  console.log(chalk.cyan(`
+Scanning approval untuk ${wallet.address}...`));
+  const spinner = ora(chalk.blue('Membaca approval...')).start();
+  const approvals = await scanApprovals(wallet.address, provider);
+  spinner.stop();
+  if (approvals.length === 0) {
+    console.log(); console.log(chalk.green('  ✅ Tidak ada approval aktif ditemukan!'));
+    await ask(chalk.gray('\nTekan Enter untuk kembali...'));
+    return true;
+  }
+  console.log(chalk.yellow(`
+  Ditemukan ${approvals.length} approval aktif:
+`));
+  const selected = [];
+  for (let i = 0; i < approvals.length; i++) {
+    const a = approvals[i];
+    const allowanceStr = ethers.formatEther(a.allowance);
+    const answer = await ask(chalk.cyan(`  ${i + 1}. ${a.symbol} (${a.address.slice(0, 10)}...) → Revoke? (y/n): `));
+    if (answer.toLowerCase() === 'y') selected.push(i);
+  }
+  if (selected.length === 0) {
+    console.log(); console.log(chalk.gray('  Tidak ada yang dipilih.'));
+    await ask(chalk.gray('\nTekan Enter untuk kembali...'));
+    return true;
+  }
+  console.log(chalk.cyan(`
+  ${selected.length} approval akan di-revoke.`));
+  console.log(chalk.cyan('  Pilih mode pembayaran gas:'));
+  console.log(chalk.cyan('    1) Self — bayar gas sendiri'));
+  console.log(chalk.cyan('    2) Sponsor — sponsor bayar gas'));
+  const gasMode = await ask(chalk.yellow('  Pilihan (1/2): '));
+  let sponsorAddress = null;
+  if (gasMode === '2') {
+    sponsorAddress = await ask(chalk.cyan('  Alamat sponsor (0x...): '));
+    if (!ethers.isAddress(sponsorAddress)) { console.log(chalk.red('  Alamat sponsor invalid.')); return; }
+  }
+  const confirmed = await confirmMainnetTx('Revoke Approval', [
+    `Wallet : ${wallet.address}`,
+    `Jumlah : ${selected.length} approval`,
+    `Mode   : ${gasMode === '2' ? 'Sponsor' : 'Self'}`,
+  ]);
+  if (!confirmed) return true;
+  let signer;
+  if (gasMode === '2') {
+    const sponsorPk = await askPassword(chalk.cyan('  Private key sponsor: '));
+    const sponsorWallet = new ethers.Wallet(sponsorPk, provider);
+    signer = sponsorWallet;
+  } else {
+    signer = wallet.connect(provider);
+  }
+  let successCount = 0;
+  for (const idx of selected) {
+    const a = approvals[idx];
+    console.log(chalk.blue(`
+  Revoke ${a.symbol}...`));
+    try {
+      const contract = new ethers.Contract(a.address, ERC20_ABI, signer);
+      const tx = await contract.approve(a.spender, 0n);
+      console.log(chalk.gray(`    TX: ${tx.hash}`));
+      await tx.wait();
+      console.log(chalk.green(`    ✅ ${a.symbol} revoked!`));
+      successCount++;
+    } catch (e) {
+      console.log(chalk.red(`    ❌ ${a.symbol} gagal: ${e.shortMessage || e.message}`));
+    }
+  }
+  console.log(); console.log(chalk.bold.cyan('  ════════════════════════════════════════'));
+  console.log(chalk.green(`  ✅ Selesai: ${successCount}/${selected.length} approval revoked`));
+  console.log(chalk.bold.cyan('  ════════════════════════════════════════'));
+  await ask(chalk.gray('\nTekan Enter untuk kembali...'));
+  return true;
 }
 
 // ================= GAS FEE =================
@@ -1907,9 +2154,10 @@ async function showMainMenu(){
     '15. Wizard Deploy',
     '16. Gas Fee',
     '17. Mining POW',
+    '18. Approval Manager',
     '0. Exit'
   ],0,72);
-  const choice=await ask(chalk.yellow('\nPilihan (0-17): '));
+  const choice=await ask(chalk.yellow('\nPilihan (0-18): '));
   switch(choice){
     case '1': await runFeature(featureBatchCall); break;
     case '2': await runFeature(actionCreateWallet); break;
@@ -1928,6 +2176,7 @@ async function showMainMenu(){
     case '15': await runFeature(featureWizardDeploy); break;
     case '16': await runFeature(actionGasFee); break;
     case '17': await runFeature(featureMiningPow); break;
+    case '18': await runFeature(featureApprovalManager); break;
     case '0':
       clearScreen();
       await animateBox('TERIMA KASIH',[
