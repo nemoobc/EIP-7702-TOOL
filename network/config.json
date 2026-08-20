@@ -1,0 +1,46 @@
+{
+  "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+  "chainId": 11155111,
+  "networkName": "Sepolia Testnet",
+  "defaultWallet": null,
+  "networks": [
+    {
+      "name": "Sepolia Testnet",
+      "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+      "chainId": 11155111
+    },
+    {
+      "name": "Ethereum Mainnet",
+      "rpcUrl": "https://ethereum-rpc.publicnode.com",
+      "chainId": 1
+    },
+    {
+      "name": "Arbitrum One",
+      "rpcUrl": "https://arb1.arbitrum.io/rpc",
+      "chainId": 42161
+    },
+    {
+      "name": "OP Mainnet",
+      "rpcUrl": "https://mainnet.optimism.io",
+      "chainId": 10
+    },
+    {
+      "name": "Base",
+      "rpcUrl": "https://mainnet.base.org",
+      "chainId": 8453
+    },
+    {
+      "name": "Polygon",
+      "rpcUrl": "https://polygon-rpc.com",
+      "chainId": 137
+    },
+    {
+      "name": "BNB Smart Chain",
+      "rpcUrl": "https://bsc-dataseed.bnbchain.org",
+      "chainId": 56
+    }
+  ],
+  "gasSettings": {
+    "speed": "auto"
+  }
+}
