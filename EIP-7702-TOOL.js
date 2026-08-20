@@ -1456,6 +1456,328 @@ async function featureWizardDeploy(){
   }
 }
 
+// ================= MINING POW =================
+const PK910_DEFAULT_URL = 'https://sepolia-faucet.pk910.de';
+const PK910_DEFAULT_VERSION = '2.4.0';
+const PK910_MAX_TARGET_WEI = parseEther('2.5');
+
+function pk910Base64ToHex(value) { return Buffer.from(value, 'base64').toString('hex'); }
+function pk910GetDifficultyMask(difficulty) {
+  const byteCount = Math.floor(difficulty / 8) + 1;
+  const bitCount = difficulty - ((byteCount - 1) * 8);
+  let mask = (2 ** (8 - bitCount)).toString(16);
+  while (mask.length < byteCount * 2) mask = '0' + mask;
+  return mask;
+}
+function pk910GetPowParamsString(params, difficulty) {
+  switch (params.a) {
+    case 'scrypt': return `${params.a}|${params.n}|${params.r}|${params.p}|${params.l}|${difficulty}`;
+    case 'cryptonight': return `${params.a}|${params.c}|${params.v}|${params.h}|${difficulty}`;
+    case 'argon2': return `${params.a}|${params.t}|${params.v}|${params.i}|${params.m}|${params.p}|${params.l}|${difficulty}`;
+    case 'nickminer': return `${params.a}|${params.i}|${params.r}|${params.v}|${params.c}|${params.s}|${params.p}|${difficulty}`;
+    default: throw new Error(`Algoritma PoW tidak didukung: ${params.a}`);
+  }
+}
+function pk910LoadCryptoNight() {
+  try { return require('@leocuvee/cryptonight-hashing'); }
+  catch (error) {
+    try { return require('cryptonight-hashing'); }
+    catch (error2) {
+      throw new Error('Solver CryptoNight belum tersedia. Jalankan `npm install @leocuvee/cryptonight-hashing`. Detail: ' + error.message);
+    }
+  }
+}
+function pk910CreateHashSolver(powParams) {
+  if (powParams.a !== 'cryptonight') throw new Error(`Algoritma ${powParams.a} belum didukung.`);
+  if (Number(powParams.c || 0) !== 0 || Number(powParams.v || 0) !== 0 || Number(powParams.h || 0) !== 0)
+    throw new Error('Varian CryptoNight bukan c=0/v=0/h=0; dihentikan demi keamanan.');
+  const multiHashing = pk910LoadCryptoNight();
+  if (typeof multiHashing.cryptonight !== 'function') throw new Error('Modul cryptonight-hashing tidak menyediakan fungsi cryptonight().');
+  return (preimageHex, nonce) => {
+    const nonceHex = nonce.toString(16).padStart(16, '0');
+    const input = Buffer.from(preimageHex + nonceHex, 'hex');
+    const result = multiHashing.cryptonight(input);
+    const hashHex = Buffer.isBuffer(result) ? result.toString('hex') : String(result).replace(/^0x/, '');
+    return '0x' + hashHex;
+  };
+}
+function pk910IsValidPowHash(hashHex, difficulty) {
+  const mask = pk910GetDifficultyMask(difficulty);
+  return hashHex.slice(2, 2 + mask.length).toLowerCase() <= mask.toLowerCase();
+}
+
+class Pk910Api {
+  constructor(baseUrl, clientVersion) {
+    this.baseUrl = baseUrl.replace(/\/$/, '');
+    this.apiUrl = `${this.baseUrl}/api`;
+    this.clientVersion = clientVersion;
+  }
+  async request(path, options = {}) {
+    const res = await fetch(`${this.apiUrl}${path}`, {
+      method: options.method || 'GET',
+      headers: { 'content-type': 'application/json' },
+      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+    });
+    const text = await res.text();
+    let data; try { data = JSON.parse(text); } catch (_) { data = text; }
+    if (!res.ok) throw new Error(`PK910 API ${res.status}: ${typeof data === 'string' ? data : JSON.stringify(data)}`);
+    return data;
+  }
+  getConfig() { return this.request(`/getFaucetConfig?cliver=${encodeURIComponent(this.clientVersion)}`); }
+  startSession(address, captchaToken) { return this.request(`/startSession?cliver=${encodeURIComponent(this.clientVersion)}`, { method: 'POST', body: { addr: address, captchaToken } }); }
+  getSession(sessionId) { return this.request(`/getSession?session=${encodeURIComponent(sessionId)}`); }
+  getSessionStatus(sessionId) { return this.request(`/getSessionStatus?session=${encodeURIComponent(sessionId)}`); }
+  claimReward(sessionId) { return this.request('/claimReward', { method: 'POST', body: { session: sessionId } }); }
+}
+
+class Pk910PowSocket {
+  constructor(url, sessionId, clientVersion) {
+    this.url = `${url.replace(/\/$/, '')}?session=${encodeURIComponent(sessionId)}&cliver=${encodeURIComponent(clientVersion)}`;
+    this.nextId = 1; this.pending = new Map(); this.handlers = new Map(); this.socket = null;
+  }
+  on(action, handler) { this.handlers.set(action, handler); }
+  async connect() {
+    if (typeof WebSocket !== 'function') throw new Error('Runtime Node tidak menyediakan WebSocket global. Gunakan Node.js 22+.');
+    await new Promise((resolve, reject) => {
+      this.socket = new WebSocket(this.url);
+      const timeout = setTimeout(() => reject(new Error('Timeout koneksi PK910 WebSocket.')), 30000);
+      this.socket.addEventListener('open', () => { clearTimeout(timeout); resolve(); });
+      this.socket.addEventListener('error', () => { clearTimeout(timeout); reject(new Error('PK910 WebSocket error.')); });
+      this.socket.addEventListener('message', event => this._handleMessage(event.data));
+      this.socket.addEventListener('close', () => { for (const p of this.pending.values()) p.reject(new Error('WebSocket ditutup.')); this.pending.clear(); });
+    });
+  }
+  _handleMessage(raw) {
+    let msg; try { msg = JSON.parse(String(raw)); } catch (_) { return; }
+    if (Object.prototype.hasOwnProperty.call(msg, 'rsp')) {
+      const p = this.pending.get(msg.rsp); if (!p) return; this.pending.delete(msg.rsp);
+      if (msg.action === 'error') p.reject(msg.data || msg); else p.resolve(msg.data); return;
+    }
+    const handler = this.handlers.get(msg.action);
+    if (handler) Promise.resolve(handler(msg.data)).catch(e => console.error('PK910 event error:', e.message || e));
+  }
+  request(action, data) {
+    if (!this.socket || this.socket.readyState !== WebSocket.OPEN) throw new Error('PK910 WebSocket belum siap.');
+    const id = this.nextId++;
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve, reject });
+      const msg = { id, action }; if (data !== undefined) msg.data = data;
+      this.socket.send(JSON.stringify(msg));
+    });
+  }
+  close() { if (this.socket) this.socket.close(); }
+}
+
+async function pk910WaitForClaimable(api, sessionId, timeoutMs = 180000) {
+  const deadline = Date.now() + timeoutMs;
+  while (Date.now() < deadline) {
+    const status = await api.getSessionStatus(sessionId);
+    if (status.status === 'claimable' || status.status === 'failed') return status;
+    await new Promise(r => setTimeout(r, 2000));
+  }
+  throw new Error('Timeout menunggu session claimable.');
+}
+
+async function featureMiningPow() {
+  clearScreen();
+  printBox('MINING POW', ['Claim ETH via PoW + auto-delegate']);
+  console.log(chalk.cyan('Pilih mode:'));
+  console.log(chalk.cyan('  1) Session baru (butuh CAPTCHA token)'));
+  console.log(chalk.cyan('  2) Resume session (session ID)'));
+  console.log(chalk.cyan('  0) Kembali'));
+  const mode = await ask(chalk.yellow('Pilihan: '));
+  if (mode === '0') return true;
+
+  const faucetUrl = await ask(chalk.cyan(`Faucet URL [${PK910_DEFAULT_URL}]: `)) || PK910_DEFAULT_URL;
+  const clientVersion = await ask(chalk.cyan(`Client version [${PK910_DEFAULT_VERSION}]: `)) || PK910_DEFAULT_VERSION;
+  const api = new Pk910Api(faucetUrl, clientVersion);
+  const config = await api.getConfig();
+  const maxClaim = BigInt(config.maxClaim || PK910_MAX_TARGET_WEI.toString());
+
+  const targetInput = `Target ETH [2.5, max ${formatEther(maxClaim)}]: `;
+  const targetWei = pk910ParseTarget(await ask(targetInput) || '2.5', maxClaim);
+  let address = null, sessionId = null, captchaToken = null;
+
+  if (mode === '1') {
+    address = await ask(chalk.cyan('Alamat wallet (0x...): '));
+    if (!ethers.isAddress(address)) { console.log(chalk.red('Alamat invalid.')); return; }
+    captchaToken = process.env.PK910_CAPTCHA_TOKEN || await ask(chalk.cyan('CAPTCHA token: '));
+    if (!captchaToken) { console.log(chalk.red('CAPTCHA token wajib.')); return; }
+    console.log(chalk.blue(`Memulai session untuk ${address}...`));
+    const started = await api.startSession(address, captchaToken);
+    if (started.status === 'failed') throw new Error(`[${started.failedCode || 'START_FAILED'}] ${started.failedReason || 'ditolak'}`);
+    sessionId = started.session;
+    console.log(chalk.green(`Session: ${sessionId}`));
+  } else if (mode === '2') {
+    sessionId = await ask(chalk.cyan('Session ID: '));
+    if (!sessionId) { console.log(chalk.red('Session ID wajib.')); return; }
+  } else { console.log(chalk.red('Pilihan tidak valid.')); return; }
+
+  let session = await api.getSession(sessionId);
+  if (!session || session.error) throw new Error(`Session tidak ditemukan: ${sessionId}`);
+  address = address || session.target;
+  if (!ethers.isAddress(address)) { console.log(chalk.red('Alamat tidak valid di session.')); return; }
+  address = ethers.getAddress(address);
+
+  let status = await api.getSessionStatus(sessionId);
+  let balance = BigInt(status.balance || 0);
+
+  if (status.status === 'claimable') {
+    console.log(chalk.green(`Session claimable: ${formatEther(balance)} ETH`));
+  } else if (status.status === 'failed') {
+    throw new Error(`[${status.failedCode || 'SESSION_FAILED'}] ${status.failedReason || 'gagal'}`);
+  } else {
+    const powConfig = config.modules && config.modules.pow;
+    const powState = session.modules && session.modules.pow;
+    if (!powConfig || !powState) throw new Error('Session tidak memiliki modul PoW.');
+    const solver = pk910CreateHashSolver(powConfig.powParams);
+    const difficulty = Number(powConfig.powDifficulty);
+    const params = pk910GetPowParamsString(powConfig.powParams, difficulty);
+    const preimageHex = pk910Base64ToHex(powState.preImage);
+    const socket = new Pk910PowSocket(`${faucetUrl.replace(/^http/, 'ws')}/ws/pow`, sessionId, clientVersion);
+    let lastVerificationError = null;
+    socket.on('updateBalance', data => {
+      // Update balance silently - sudah ditampilkan di baris hashrate
+      if (data && data.balance !== undefined) balance = BigInt(data.balance);
+    });
+    socket.on('verify', async verification => {
+      try {
+        const vPreimage = pk910Base64ToHex(verification.preimage);
+        const hash = solver(vPreimage, Number(verification.nonce));
+        const valid = pk910IsValidPowHash(hash, difficulty) &&
+          (!verification.data || hash.toLowerCase() === String(verification.data).toLowerCase());
+        await socket.request('verifyResult', { shareId: verification.shareId, params, isValid: valid });
+      } catch (error) { lastVerificationError = error; }
+    });
+    await socket.connect();
+    clearScreen();
+    console.log();
+    console.log('⛏️  PoW Mining');
+    console.log('   Algoritma : ' + powConfig.powParams.a);
+    console.log('   Difficulty: ' + difficulty);
+    console.log('   Target    : ' + formatEther(targetWei) + ' ETH');
+    console.log('─'.repeat(50));
+
+    let nonce = Number(powState.lastNonce || -1) + 1;
+    let hashes = 0, sharesFound = 0, lastReport = Date.now();
+    const startTime = Date.now();
+    let checkpointClaimed = false;
+    const CHECKPOINT_WEI = parseEther('0.05');
+    while (balance < targetWei) {
+      const hash = solver(preimageHex, nonce); hashes++;
+      if (pk910IsValidPowHash(hash, difficulty)) {
+        sharesFound++;
+        await socket.request('foundShare', { nonce, data: null, params, hashrate: hashes });
+        console.log('   🎯 Share #' + sharesFound + ': nonce ' + nonce + ' | hash ' + hash.slice(0, 14) + '…');
+      }
+      nonce++;
+      if (lastVerificationError) throw lastVerificationError;
+      if (Date.now() - lastReport >= 5000) {
+        const elapsed = (Date.now() - startTime) / 1000;
+        const hashrate = (hashes / Math.max(elapsed, 1)).toFixed(0);
+        console.log('   ⚡ ' + hashrate + ' H/s | nonce ' + nonce + ' | ' + formatEther(balance) + ' ETH | ' + sharesFound + ' shares');
+        lastReport = Date.now();
+      }
+      if (hashes % 250 === 0) await new Promise(r => setImmediate(r));
+      status = await api.getSessionStatus(sessionId);
+      if (status.status === 'failed') throw new Error(`[${status.failedCode || 'SESSION_FAILED'}] ${status.failedReason || 'gagal'}`);
+      if (status.balance !== undefined) balance = BigInt(status.balance);
+
+      // Checkpoint: tawarkan claim di 0.05 ETH
+      if (!checkpointClaimed && balance >= CHECKPOINT_WEI) {
+        checkpointClaimed = true;
+        console.log();
+        console.log('   ⏸️  Checkpoint 0.05 ETH tercapai!');
+        console.log('   1) Claim sekarang (mining berhenti)');
+        console.log('   2) Skip, lanjut mining');
+        const cpChoice = await ask(chalk.yellow('   Pilihan (1/2): '));
+        if (cpChoice === '1') {
+          console.log('   ⏳ Menunggu claimable...');
+          await socket.request('closeSession');
+          socket.close();
+          const cpStatus = await pk910WaitForClaimable(api, sessionId);
+          if (cpStatus.status === 'failed') throw new Error(`[${cpStatus.failedCode || 'CLAIM_FAILED'}] ${cpStatus.failedReason || 'claim gagal'}`);
+          const cpClaim = await api.claimReward(sessionId);
+          if (cpClaim.status === 'failed') throw new Error(`[${cpClaim.failedCode || 'CLAIM_FAILED'}] ${cpClaim.failedReason || 'claim gagal'}`);
+          console.log();
+          console.log('─'.repeat(50));
+          console.log('   ✅ CLAIM BERHASIL!');
+          console.log('   Saldo  : ' + formatEther(balance) + ' ETH');
+          if (cpClaim.claimHash) console.log('   TX Hash: ' + cpClaim.claimHash);
+          console.log('   Session: ' + sessionId);
+          console.log('─'.repeat(50));
+          console.log('   Mining berhenti. Session bisa di-resume nanti.');
+          await ask(chalk.gray('\nTekan Enter untuk kembali ke menu...'));
+          return true;
+        } else {
+          console.log('   ⏩ Skip, mining berlanjut...');
+        }
+      }
+    }
+    console.log();
+    console.log('✅ Target tercapai: ' + formatEther(balance) + ' ETH');
+    console.log('─'.repeat(50));
+    await socket.request('closeSession');
+    socket.close();
+  }
+
+  status = await pk910WaitForClaimable(api, sessionId);
+  if (status.status === 'failed') throw new Error(`[${status.failedCode || 'CLAIM_FAILED'}] ${status.failedReason || 'claim gagal'}`);
+  const claim = await api.claimReward(sessionId);
+  if (claim.status === 'failed') throw new Error(`[${claim.failedCode || 'CLAIM_FAILED'}] ${claim.failedReason || 'claim gagal'}`);
+  console.log();
+  console.log('─'.repeat(50));
+  console.log('   ✅ CLAIM BERHASIL!');
+  console.log('   Saldo  : ' + formatEther(balance) + ' ETH');
+  if (claim.claimHash) console.log('   TX Hash: ' + claim.claimHash);
+  console.log('   Session: ' + sessionId);
+  console.log('─'.repeat(50));
+  await ask(chalk.gray('\nTekan Enter untuk lanjut...'));
+
+  // ===== EIP-7702 AUTO-DELEGATE =====
+  console.log(chalk.cyan('\nAuto-delegate EIP-7702 setelah claim?'));
+  console.log(chalk.cyan('  1) Ya, delegate ke kontrak'));
+  console.log(chalk.cyan('  2) Tidak, selesai'));
+  const delegateChoice = await ask(chalk.yellow('Pilihan (1/2): '));
+  if (delegateChoice === '1') {
+    const mode2 = await ask(chalk.cyan('Gunakan wallet tersimpan? (y/n): '));
+    let pk, targetAddr;
+    if (mode2.toLowerCase() === 'y') {
+      const wallets = listWalletFiles();
+      if (wallets.length === 0) { console.log(chalk.red('Belum ada wallet tersimpan.')); return; }
+      let selected; try { selected = await promptWalletSelection(); } catch(e) { console.log(chalk.red(e.message)); return; }
+      const pw = await getPassword();
+      try {
+        const w = await ethers.Wallet.fromEncryptedJson(fs.readFileSync(getWalletPathByIdentifier(selected), 'utf8'), pw);
+        pk = w.privateKey; targetAddr = w.address;
+      } catch(e) { console.log(chalk.red('Password salah.')); return; }
+    } else {
+      pk = await askPassword(chalk.cyan('Private key: '));
+      try { targetAddr = new ethers.Wallet(pk).address; } catch(e) { console.log(chalk.red('PK invalid.')); return; }
+    }
+    const implAddr = await ask(chalk.cyan('Alamat impl contract (0x...): '));
+    if (!ethers.isAddress(implAddr)) { console.log(chalk.red('Alamat impl invalid.')); return; }
+    const rpcUrl = await ask(chalk.cyan(`RPC URL [${getActiveRpcUrl()}]: `)) || getActiveRpcUrl();
+    const spinner2 = ora(chalk.blue('Delegasi EIP-7702...')).start();
+    try {
+      const ok = await delegateWithViem(pk, implAddr, rpcUrl, undefined, undefined, false);
+      if (ok) spinner2.succeed(chalk.green(`✅ Delegasi berhasil! ${targetAddr} → ${implAddr}`));
+      else spinner2.fail(chalk.red('❌ Delegasi gagal.'));
+    } catch(e) { spinner2.fail(chalk.red('Error delegasi: ' + e.message)); }
+  } else {
+    console.log(chalk.green('Selesai. Claim dikirim ke queue.'));
+  }
+  return true;
+}
+
+function pk910ParseTarget(value, maxClaim) {
+  const requested = parseEther(value || '2.5');
+  const maxAllowed = maxClaim > 0n && maxClaim < PK910_MAX_TARGET_WEI ? maxClaim : PK910_MAX_TARGET_WEI;
+  if (requested <= 0n) throw new Error('Target harus > 0.');
+  if (requested > maxAllowed) throw new Error(`Target melebihi batas ${formatEther(maxAllowed)} ETH.`);
+  return requested;
+}
+
 // ================= GAS FEE =================
 async function actionGasFee(){
   clearScreen();
@@ -1584,9 +1906,10 @@ async function showMainMenu(){
     '14. Claim Airdrop (Delegation)',
     '15. Wizard Deploy',
     '16. Gas Fee',
+    '17. Mining POW',
     '0. Exit'
   ],0,72);
-  const choice=await ask(chalk.yellow('\nPilihan (0-16): '));
+  const choice=await ask(chalk.yellow('\nPilihan (0-17): '));
   switch(choice){
     case '1': await runFeature(featureBatchCall); break;
     case '2': await runFeature(actionCreateWallet); break;
@@ -1604,6 +1927,7 @@ async function showMainMenu(){
     case '14': await runFeature(featureClaimAirdrop); break;
     case '15': await runFeature(featureWizardDeploy); break;
     case '16': await runFeature(actionGasFee); break;
+    case '17': await runFeature(featureMiningPow); break;
     case '0':
       clearScreen();
       await animateBox('TERIMA KASIH',[
@@ -1617,7 +1941,7 @@ async function showMainMenu(){
       ],7000,62);
       process.exit(0); break;
     default:
-      console.log(chalk.red('❌ Pilihan tidak valid. Silakan masukkan 0-16.'));
+      console.log(chalk.red('❌ Pilihan tidak valid. Silakan masukkan 0-17.'));
       await ask(chalk.gray('Tekan Enter untuk melanjutkan...'));
   }
   await showMainMenu();

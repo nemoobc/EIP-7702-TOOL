@@ -102,6 +102,10 @@ Dengan EIP-7702, sebuah Externally Owned Account (EOA) dapat didelegasikan semen
       <td>⛽ <b>Gas Fee</b></td>
       <td>Cek estimasi gas fee & ubah kecepatan default gas (slow/normal/fast/auto/manual).</td>
     </tr>
+    <tr align="center">
+      <td>⛏️ <b>Mining POW</b></td>
+      <td>Claim ETH via PoW mining (PK910 Sepolia Faucet). Auto-delegate EIP-7702 setelah claim. Checkpoint claim di 0.05 ETH.</td>
+    </tr>
   </table>
 </div>
 
@@ -148,6 +152,7 @@ Menu interaktif:
 │ 14. Claim Airdrop (Delegation)           │
 │ 15. Wizard Deploy                        │
 │ 16. Gas Fee                              │
+│ 17. Mining POW                           │
 │ 0. Exit                                  │
 └──────────────────────────────────────────┘
 ```
@@ -186,27 +191,35 @@ Address wallet test harus dicetak oleh runner test—jangan menaruh private key 
 
 ---
 
-## 🤖 PK910 PoW Faucet CLI
+## ⛏️ Mining POW (PK910 Sepolia Faucet)
 
-Tool menyediakan client CLI untuk **PK910 Sepolia PoW Faucet**. CAPTCHA tetap harus diperoleh melalui flow resmi PK910; client ini hanya menjalankan PoW dan claim setelah session/token yang sah tersedia.
+Tool menyediakan fitur **Mining POW** untuk claim ETH via PoW mining dari **PK910 Sepolia Faucet**. CAPTCHA tetap harus diperoleh melalui flow resmi PK910; tool ini hanya menjalankan PoW dan claim setelah session/token yang sah tersedia.
 
-PK910 saat ini membatasi reward hingga **2.5 Sepolia ETH**. Jalankan:
+### Cara Pakai
 
-```bash
-PK910_CAPTCHA_TOKEN=... npm run faucet:pk910 -- \
-  --address 0xYourTestWallet \
-  --target 2.5
-```
+**Session baru:**
+1. Pilih menu `17. Mining POW`
+2. Pilih `1) Session baru (butuh CAPTCHA token)`
+3. Masukkan CAPTCHA token dari website PK910
+4. Mining akan dimulai secara otomatis
 
-Untuk melanjutkan session yang sudah dibuat:
+**Resume session:**
+1. Pilih menu `17. Mining POW`
+2. Pilih `2) Resume session (session ID)`
+3. Masukkan session ID yang tersimpan
 
-```bash
-npm run faucet:pk910 -- --session SESSION_ID --target 2.5
-```
+### Fitur
+- Mining dengan algoritma CryptoNight
+- Checkpoint claim di **0.05 ETH** (opsi claim atau lanjut mining)
+- Target default **2.5 ETH** (maksimal dari PK910)
+- Auto-delegate EIP-7702 setelah claim
+- Tampilan real-time: hashrate, nonce, balance, shares
 
-Solver CryptoNight dipasang sebagai optional dependency native. Jalankan `npm install --include=optional` dan pastikan toolchain `node-gyp` tersedia; dependency native lama ini dapat gagal dibuild pada Node.js 24, sehingga gunakan runtime yang kompatibel bila diperlukan. Dependency tersebut berlisensi GPL-3.0-or-later; periksa kewajiban lisensi sebelum mendistribusikan binary/package gabungan.
-
-Client tidak melakukan bypass CAPTCHA, rate-limit, atau anti-bot PK910.
+### Catatan
+- Solver CryptoNight dipasang sebagai optional dependency native
+- Jalankan `npm install --include=optional` dan pastikan toolchain `node-gyp` tersedia
+- Dependency berlisensi GPL-3.0-or-later; periksa kewajiban lisensi sebelum distribusi
+- Client tidak melakukan bypass CAPTCHA, rate-limit, atau anti-bot PK910
 
 ---
 
