@@ -1,0 +1,21 @@
+{
+  "name": "eip7702-tool",
+  "version": "1.0.0",
+  "main": "EIP-7702-TOOL.js",
+  "scripts": {
+    "start": "node EIP-7702-TOOL.js",
+    "test": "node onchain-test.js",
+    "test:onchain": "node onchain-test.js",
+    "faucet:pk910": "node pk910-faucet.js"
+  },
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "ethers": "^6.13.0",
+    "ora": "^5.4.1",
+    "solc": "^0.8.20",
+    "viem": "^2.55.17"
+  },
+  "optionalDependencies": {
+    "cryptonight-hashing": "^3.0.5"
+  }
+}

@@ -1,0 +1,10 @@
+node_modules/
+wallets/
+
+# test credentials & generated artifacts
+test-wallet.json
+test-report.json
+test-output.log
+
+# generated deployment data
+network/deployed-contracts.json
