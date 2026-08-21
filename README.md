@@ -3,6 +3,7 @@
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=190&section=header&text=%F0%9F%94%A5%20EIP-7702%20TOOL%20%F0%9F%94%A5&fontSize=52&fontColor=ffffff&animation=fadeIn&desc=Wallet%20CLI%20%26%20EIP-7702%20Toolkit%20untuk%20Ethereum&descSize=18&descAlignY=68" width="100%" />
 
 <a href="https://github.com/nemoobc/EIP-7702-TOOL"><img src="https://img.shields.io/badge/Version-3.3.0-brightgreen?style=for-the-badge&logo=github" alt="Version"></a>
+<a href="https://www.npmjs.com/package/eip7702-tool"><img src="https://img.shields.io/npm/v/eip7702-tool?style=for-the-badge&logo=npm&color=cb3837" alt="npm"></a>
 <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
 <img src="https://img.shields.io/badge/Network-Mainnet%20%2B%20Sepolia-blue?style=for-the-badge&logo=ethereum&logoColor=white" alt="Network">
 <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
@@ -21,6 +22,14 @@
 ---
 
 ## 🚀 Quick Start
+
+**Tanpa install (via npx):**
+
+```bash
+npx eip7702-tool
+```
+
+**Atau dari source:**
 
 ```bash
 git clone https://github.com/nemoobc/EIP-7702-TOOL.git
