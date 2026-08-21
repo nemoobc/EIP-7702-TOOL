@@ -1,7 +1,7 @@
 {
-  "rpcUrl": "https://ethereum-rpc.publicnode.com",
-  "chainId": 1,
-  "networkName": "Ethereum Mainnet",
+  "rpcUrl": "https://ethereum-sepolia-rpc.publicnode.com",
+  "chainId": 11155111,
+  "networkName": "Sepolia Testnet",
   "defaultWallet": null,
   "networks": [
     {
