@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-3.2.0-brightgreen?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/Version-3.3.0-brightgreen?style=for-the-badge" alt="Version">
   <img src="https://img.shields.io/badge/Node.js-v18+-green?style=for-the-badge&logo=node.js" alt="Node.js">
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
 </p>
@@ -203,18 +203,15 @@ Ya — Mainnet, Sepolia, Arbitrum, OP, Base, Polygon, BSC, dan custom network.
 
 ## 📝 Changelog
 
-### v3.2.0
-- **Fixed:** Approval Manager scan approval nyata via event log + verifikasi allowance per spender
-- **Added:** Sponsor revoke via EIP-7702 atomic (`approvalRevoker`); token kustom untuk scan
-- **Fixed:** Mining throttle polling 3 detik; duplikat alamat FIL/CRV; registry kontrak per chainId
-- **Fixed:** Flash loan ERC-3156, verifikasi Blockscout, ERC-165, BigInt NFT ID
-- **Changed:** Estimasi gas dinamis delegasi; config default Sepolia
-
-### v3.1.0
-- Approval Manager, Mainnet Safety, fix mining display
-
-### v3.0.0
-- Initial release: wallet management, send ETH/token, EIP-7702 operations, batch call, rescue assets, mining POW, wizard deploy
+### v3.3.0
+- **Fixed:** Approval Manager kini scan approval nyata via event log `Approval` + verifikasi `allowance()` per spender; dukungan token kustom (testnet-ready)
+- **Added:** Sponsor revoke via EIP-7702 atomic (`approvalRevoker`); mode pembayaran gas Self/Sponsor
+- **Fixed:** Bug non-standard ERC20 (USDT) — kontrak `rescue`, `airdropClaimer`, dan `approvalRevoker` kini pakai low-level call agar kompatibel dengan token yang tidak mengembalikan `bool` (v1.1.0)
+- **Fixed:** Mining PoW throttle polling status tiap 3 detik; registry kontrak deploy per chainId; reuse kontrak batch verifikasi deployer
+- **Fixed:** Flash loan ERC-3156 mengirim alamat token yang benar; ERC-165 untuk ERC-721/1155; NFT token ID pakai BigInt; verifikasi Blockscout pakai endpoint `verifysourcecode`
+- **Changed:** Estimasi gas dinamis pada delegasi EIP-7702; config default Sepolia testnet
+- **Added:** Test suite lengkap — on-chain Sepolia (35 PASS), Approval Manager (5 PASS), mining loop end-to-end via mock faucet lokal, mainnet fork + simulasi state mainnet via `eth_call`/`stateOverride` (9 PASS)
+- **Changed:** README ditulis ulang; dependency terkunci via `package-lock.json`
 
 ---
 
