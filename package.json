@@ -1,7 +1,46 @@
 {
   "name": "eip7702-tool",
   "version": "3.3.0",
+  "description": "🔥 EIP-7702 Wallet Toolkit — create wallets, send ETH/tokens, delegate EOA, batch execute, rescue assets, revoke delegation & approvals, wizard deploy ERC-20/721/1155, PK910 faucet CLI",
+  "license": "MIT",
   "main": "EIP-7702-TOOL.js",
+  "bin": {
+    "eip7702-tool": "EIP-7702-TOOL.js"
+  },
+  "files": [
+    "EIP-7702-TOOL.js",
+    "onchain-test.js",
+    "network/config.json",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nemoobc/EIP-7702-TOOL.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nemoobc/EIP-7702-TOOL/issues"
+  },
+  "homepage": "https://github.com/nemoobc/EIP-7702-TOOL#readme",
+  "keywords": [
+    "ethereum",
+    "eip-7702",
+    "eip7702",
+    "wallet",
+    "cli",
+    "erc20",
+    "erc721",
+    "erc1155",
+    "delegation",
+    "rescue",
+    "approval",
+    "revoke",
+    "solidity",
+    "web3"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
     "start": "node EIP-7702-TOOL.js",
     "test": "node onchain-test.js",

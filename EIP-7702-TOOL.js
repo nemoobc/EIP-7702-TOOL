@@ -2010,6 +2010,49 @@ async function scanApprovals(walletAddress, provider, extraTokens = []) {
   }
   return results;
 }
+
+// ===== Scan approval MENYELURUH via Etherscan API (semua token, bukan cuma populer) =====
+const ETHERSCAN_V2 = 'https://api.etherscan.io/v2/api';
+async function fetchApprovalPairsEtherscan(walletAddress, apiKey, chainId) {
+  const ownerTopic = '0x' + walletAddress.toLowerCase().replace(/^0x/, '').padStart(64, '0');
+  const pairs = new Map(); // key: token-spender lowercase
+  for (let page = 1; ; page++) {
+    const url = `${ETHERSCAN_V2}?chainid=${chainId}&module=logs&action=getLogs&fromBlock=0&toBlock=latest` +
+      `&topic0=${APPROVAL_EVENT_TOPIC}&topic1=${ownerTopic}&page=${page}&offset=1000&apikey=${apiKey}`;
+    const res = await fetch(url);
+    const json = await res.json();
+    if (json.status !== '1' || !Array.isArray(json.result)) {
+      if (json.message === 'No transactions found') break;
+      throw new Error('Etherscan: ' + (json.result && json.result.message ? json.result.message : json.message || 'unknown error'));
+    }
+    for (const log of json.result) {
+      if (!log.address || !log.topics || log.topics.length < 3) continue;
+      const token = ethers.getAddress(log.address);
+      const spender = ethers.getAddress('0x' + log.topics[2].slice(26));
+      pairs.set(token.toLowerCase() + '-' + spender.toLowerCase(), { token, spender });
+    }
+    if (json.result.length < 1000) break;
+  }
+  return [...pairs.values()];
+}
+async function scanApprovalsFull(walletAddress, provider, apiKey, chainId) {
+  const pairs = await fetchApprovalPairsEtherscan(walletAddress, apiKey, chainId);
+  const results = [];
+  const symbolCache = new Map();
+  for (const { token, spender } of pairs) {
+    try {
+      let symbol = symbolCache.get(token);
+      if (symbol === undefined) {
+        try { symbol = await new ethers.Contract(token, ['function symbol() view returns (string)'], provider).symbol(); }
+        catch (e) { symbol = 'TOKEN'; }
+        symbolCache.set(token, symbol);
+      }
+      const allowance = await new ethers.Contract(token, ['function allowance(address,address) view returns (uint256)'], provider).allowance(walletAddress, spender);
+      if (allowance > 0n) results.push({ symbol, address: token, allowance, spender });
+    } catch (e) { /* skip */ }
+  }
+  return results;
+}
 async function featureApprovalManager() {
   clearScreen();
   await showNetworkStatus();
@@ -2023,17 +2066,43 @@ async function featureApprovalManager() {
     wallet = await ethers.Wallet.fromEncryptedJson(fs.readFileSync(getWalletPathByIdentifier(walletId), 'utf8'), password);
   } catch (e) { console.log(chalk.red('Password salah atau file wallet rusak.')); return; }
   console.log(chalk.cyan(`
-Scanning approval untuk ${wallet.address}...`));
-  const extraTokens = [];
-  while (true) {
-    const custom = await ask(chalk.cyan('Tambah alamat token kustom untuk di-scan (kosongkan = lanjut): '));
-    if (!custom) break;
-    if (!/^0x[0-9a-fA-F]{40}$/.test(custom)) { console.log(chalk.red('  Alamat token invalid.')); continue; }
-    extraTokens.push({ symbol: null, address: ethers.getAddress(custom) });
+Pilih mode scan:`));
+  console.log(chalk.cyan('  1) Token populer (19 token bawaan)'));
+  console.log(chalk.cyan('  2) Menyeluruh — semua token via Etherscan API (butuh API key gratis)'));
+  const scanMode = await ask(chalk.yellow('Pilihan (1/2): '));
+  let approvals;
+  if (scanMode === '2') {
+    let apiKey = process.env.ETHERSCAN_API_KEY || loadConfig().etherscanApiKey || '';
+    if (!apiKey) {
+      console.log(chalk.gray('  API key gratis: daftar di https://etherscan.io → MyAPIKey'));
+      apiKey = await ask(chalk.cyan('  Etherscan API key: '));
+      if (!apiKey) { console.log(chalk.red('  ❌ Tanpa API key, mode menyeluruh tidak tersedia.')); return true; }
+      const cfg = loadConfig(); cfg.etherscanApiKey = apiKey.trim(); saveConfig(cfg);
+      console.log(chalk.green('  ✅ API key tersimpan di config.'));
+    }
+    const chainIdNum = Number(loadConfig().chainId);
+    const spinner = ora(chalk.blue('Mengambil riwayat approval dari Etherscan...')).start();
+    try {
+      approvals = await scanApprovalsFull(wallet.address, provider, apiKey.trim(), chainIdNum);
+      spinner.succeed(chalk.green(`Scan menyeluruh selesai (${approvals.length} approval aktif).`));
+    } catch (e) {
+      spinner.fail(chalk.red('Scan menyeluruh gagal: ' + (e.shortMessage || e.message)));
+      console.log(chalk.yellow('  💡 Cek API key / kuota, atau lanjut mode populer.'));
+      await ask(chalk.gray('\nTekan Enter untuk kembali...'));
+      return true;
+    }
+  } else {
+    const extraTokens = [];
+    while (true) {
+      const custom = await ask(chalk.cyan('Tambah alamat token kustom untuk di-scan (kosongkan = lanjut): '));
+      if (!custom) break;
+      if (!/^0x[0-9a-fA-F]{40}$/.test(custom)) { console.log(chalk.red('  Alamat token invalid.')); continue; }
+      extraTokens.push({ symbol: null, address: ethers.getAddress(custom) });
+    }
+    const spinner = ora(chalk.blue('Membaca approval...')).start();
+    approvals = await scanApprovals(wallet.address, provider, extraTokens);
+    spinner.stop();
   }
-  const spinner = ora(chalk.blue('Membaca approval...')).start();
-  const approvals = await scanApprovals(wallet.address, provider, extraTokens);
-  spinner.stop();
   if (approvals.length === 0) {
     console.log(); console.log(chalk.green('  ✅ Tidak ada approval aktif ditemukan!'));
     await ask(chalk.gray('\nTekan Enter untuk kembali...'));
@@ -2325,7 +2394,7 @@ module.exports = {
   verifyOnSourcify, verifyOnBlockscout, verifyOnBoth,
   loadDeployedContracts, saveDeployedContract,
   findRescueContract, findAirdropContract,
-  getEthPriceUsd, getGasSettings, scanApprovals,
+  getEthPriceUsd, getGasSettings, scanApprovals, scanApprovalsFull,
   Pk910Api, Pk910PowSocket, pk910GetDifficultyMask, pk910IsValidPowHash,
   pk910ParseTarget, pk910CreateHashSolver, pk910GetPowParamsString,
   featureMiningPow

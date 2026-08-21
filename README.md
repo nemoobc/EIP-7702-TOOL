@@ -3,6 +3,7 @@
 <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=190&section=header&text=%F0%9F%94%A5%20EIP-7702%20TOOL%20%F0%9F%94%A5&fontSize=52&fontColor=ffffff&animation=fadeIn&desc=Wallet%20CLI%20%26%20EIP-7702%20Toolkit%20untuk%20Ethereum&descSize=18&descAlignY=68" width="100%" />
 
 <a href="https://github.com/nemoobc/EIP-7702-TOOL"><img src="https://img.shields.io/badge/Version-3.3.0-brightgreen?style=for-the-badge&logo=github" alt="Version"></a>
+<a href="https://www.npmjs.com/package/eip7702-tool"><img src="https://img.shields.io/npm/v/eip7702-tool?style=for-the-badge&logo=npm&color=cb3837" alt="npm"></a>
 <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
 <img src="https://img.shields.io/badge/Network-Mainnet%20%2B%20Sepolia-blue?style=for-the-badge&logo=ethereum&logoColor=white" alt="Network">
 <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
@@ -21,6 +22,14 @@
 ---
 
 ## 🚀 Quick Start
+
+**Tanpa install (via npx):**
+
+```bash
+npx eip7702-tool
+```
+
+**Atau dari source:**
 
 ```bash
 git clone https://github.com/nemoobc/EIP-7702-TOOL.git
@@ -99,13 +108,15 @@ Pilih menu `10`/`11` → pilih wallet → masukkan tujuan → mode manual/MAX �
 Menu `8` → deploy kontrak rescue (sekali, lalu reuse) → target hanya sign authorization → sponsor membayar gas → aset pindah atomik ke alamat SAFE.
 
 ### Approval Manager
-Menu `18` → scan approval aktif via event log `Approval` + verifikasi `allowance()` per spender → pilih yang mau di-revoke:
+Menu `18` → pilih mode scan:
+- **Token populer** — 19 token bawaan (USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, CRV, SNX, SUSHI, COMP, MKR, LDO) + alamat token kustom
+- **Menyeluruh** — semua token apa pun via [Etherscan API](https://etherscan.io) (API key gratis); riwayat approval diambil dari event log blockchain lalu diverifikasi `allowance()` per spender
+
+Lalu pilih yang mau di-revoke:
 - **Self** — owner bayar gas
 - **Sponsor** — via EIP-7702 atomic dengan kontrak `approvalRevoker`
 
-Bisa tambah alamat token kustom (berguna di testnet). Daftar bawaan: USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, CRV, SNX, SUSHI, COMP, MKR, LDO.
-
-> Di RPC publik, scan dibatasi riwayat ~1M blok terakhir. Gunakan RPC berbayar untuk riwayat penuh.
+> Di RPC publik, mode populer dibatasi riwayat ~1M blok terakhir. Mode menyeluruh tidak terpengaruh karena data diambil dari Etherscan.
 
 ### Wizard Deploy
 Menu `15` → pilih ERC-20/721/1155 → kombinasikan fitur (mintable, burnable, pausable, roles, permit, flash minting, UUPS proxy) → deploy → verifikasi otomatis ke Sourcify & Blockscout.
@@ -204,8 +215,6 @@ Ya — Mainnet, Sepolia, Arbitrum, OP, Base, Polygon, BSC, dan custom network.
 
 MIT — lihat [LICENSE](LICENSE).
 
-<div align="center">
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=140&section=footer&text=Dibuat%20dengan%20%E2%9D%A4%EF%B8%8F%20dan%20%E2%98%95&fontSize=24&fontColor=ffffff&animation=fadeIn" width="100%" />
-
-</div>
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=150&section=footer&text=Dibuat%20dengan%20%E2%9D%A4%EF%B8%8F%20dan%20%E2%98%95&fontSize=26&fontColor=ffffff&animation=twinkling" alt="footer"/>
+</p>
