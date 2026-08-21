@@ -1,15 +1,22 @@
-<p align="center">
-  <img src="https://img.shields.io/badge/Version-3.3.0-brightgreen?style=for-the-badge" alt="Version">
-  <img src="https://img.shields.io/badge/Node.js-v18+-green?style=for-the-badge&logo=node.js" alt="Node.js">
-  <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License">
-</p>
+<div align="center">
 
-<h1 align="center">🔥 EIP-7702 TOOL</h1>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=190&section=header&text=%F0%9F%94%A5%20EIP-7702%20TOOL%20%F0%9F%94%A5&fontSize=52&fontColor=ffffff&animation=fadeIn&desc=Wallet%20CLI%20%26%20EIP-7702%20Toolkit%20untuk%20Ethereum&descSize=18&descAlignY=68" width="100%" />
 
-<p align="center">
-  <b>Wallet CLI & EIP-7702 Toolkit untuk Ethereum</b><br>
-  <i>Buat wallet, kirim ETH/token, delegasi EOA, batch call, rescue aset, revoke approval — semua dari terminal.</i>
-</p>
+<a href="https://github.com/nemoobc/EIP-7702-TOOL"><img src="https://img.shields.io/badge/Version-3.3.0-brightgreen?style=for-the-badge&logo=github" alt="Version"></a>
+<a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
+<img src="https://img.shields.io/badge/Network-Mainnet%20%2B%20Sepolia-blue?style=for-the-badge&logo=ethereum&logoColor=white" alt="Network">
+<img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
+<img src="https://img.shields.io/badge/Tests-41%20PASS-success?style=for-the-badge&logo=checkmarx&logoColor=white" alt="Tests">
+
+<br>
+
+<a href="https://github.com/nemoobc/EIP-7702-TOOL/stargazers"><img src="https://img.shields.io/github/stars/nemoobc/EIP-7702-TOOL?style=social" alt="Stars"></a>
+<a href="https://github.com/nemoobc/EIP-7702-TOOL/network/members"><img src="https://img.shields.io/github/forks/nemoobc/EIP-7702-TOOL?style=social" alt="Forks"></a>
+<a href="https://github.com/nemoobc/EIP-7702-TOOL/issues"><img src="https://img.shields.io/github/issues/nemoobc/EIP-7702-TOOL?style=social" alt="Issues"></a>
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=F7B93E&center=true&vCenter=true&width=650&lines=Buat+wallet+%E2%9A%A1;Kirim+ETH+%26+token+%F0%9F%92%B8;Delegasi+EOA+dengan+EIP-7702+%F0%9F%A7%AA;Batch+call+atomik+%F0%9F%A7%A9;Rescue+aset+dari+wallet+terkunci+%F0%9F%9B%9F;Revoke+approval+berbahaya+%F0%9F%94%90;Deploy+kontrak+ERC-20%2F721%2F1155+%F0%9F%A7%99)](https://github.com/nemoobc/EIP-7702-TOOL)
+
+</div>
 
 ---
 
@@ -30,19 +37,23 @@ npm start
 
 ## ✨ Fitur
 
-| Fitur | Deskripsi |
-|:------|:----------|
-| 🧾 **Wallet Management** | Buat / import / export / hapus wallet, terenkripsi lokal |
-| 💸 **Send ETH & Token** | Mode manual atau MAX, input ETH/USD, EIP-1559 |
-| 🧪 **EIP-7702 Delegation** | Delegasikan EOA ke kontrak, revoke kapan saja |
-| 🧩 **Batch Call** | Banyak aksi dalam SATU transaksi |
-| 🛟 **Rescue Atomic** | Selamatkan ETH/ERC20/ERC721 dari wallet terkunci, gas dibayar sponsor |
-| 🎁 **Claim Airdrop** | Klaim + forward reward ke SAFE dalam satu TX atomic |
-| 🔐 **Approval Manager** | Scan approval ERC-20 nyata via event log, revoke sendiri atau via sponsor |
-| 🧙 **Wizard Deploy** | Deploy ERC-20/721/1155 dari template, verifikasi otomatis Sourcify + Blockscout |
-| ⛽ **Gas Fee** | Cek & atur kecepatan gas (slow/normal/fast/auto/manual) |
-| ⛏️ **Mining POW** | Claim ETH Sepolia via PoW mining PK910 |
-| 🛡️ **Mainnet Safety** | Warning konfirmasi + rekomendasi RPC sebelum transaksi mainnet |
+<table>
+<tr><td>🧾 <b>Wallet Management</b></td><td>Buat / import / export / hapus wallet, terenkripsi lokal</td></tr>
+<tr><td>💸 <b>Send ETH & Token</b></td><td>Mode manual atau MAX, input ETH/USD, EIP-1559</td></tr>
+<tr><td>🧪 <b>EIP-7702 Delegation</b></td><td>Delegasikan EOA ke kontrak, revoke kapan saja</td></tr>
+<tr><td>🧩 <b>Batch Call</b></td><td>Banyak aksi dalam SATU transaksi</td></tr>
+<tr><td>🛟 <b>Rescue Atomic</b></td><td>Selamatkan ETH/ERC20/ERC721 dari wallet terkunci, gas dibayar sponsor</td></tr>
+<tr><td>🎁 <b>Claim Airdrop</b></td><td>Klaim + forward reward ke SAFE dalam satu TX atomic</td></tr>
+<tr><td>🔐 <b>Approval Manager</b></td><td>Scan approval ERC-20 nyata via event log, revoke sendiri atau via sponsor</td></tr>
+<tr><td>🧙 <b>Wizard Deploy</b></td><td>Deploy ERC-20/721/1155 dari template, verifikasi otomatis Sourcify + Blockscout</td></tr>
+<tr><td>⛽ <b>Gas Fee</b></td><td>Cek & atur kecepatan gas (slow/normal/fast/auto/manual)</td></tr>
+<tr><td>⛏️ <b>Mining POW</b></td><td>Claim ETH Sepolia via PoW mining PK910</td></tr>
+<tr><td>🛡️ <b>Mainnet Safety</b></td><td>Warning konfirmasi + rekomendasi RPC sebelum transaksi mainnet</td></tr>
+</table>
+
+<div align="center">
+<a href="https://nodejs.org"><img src="https://skillicons.dev/icons?i=nodejs,js,docker,git,github,vscode&theme=dark" /></a>
+</div>
 
 ---
 
@@ -51,42 +62,18 @@ npm start
 | Network | Chain ID | | Network | Chain ID |
 |:--------|:--------:|-|:--------|:--------:|
 | Ethereum Mainnet | 1 | | Base | 8453 |
-| Sepolia (default) | 11155111 | | Polygon | 137 |
+| Sepolia (default) 🟢 | 11155111 | | Polygon | 137 |
 | Arbitrum One | 42161 | | BNB Smart Chain | 56 |
 | OP Mainnet | 10 | | Custom | any |
 
 ---
 
-## 📋 Menu
-
-```
-┌──────────────────────────────────────────┐
-│        WALLET & EIP-7702 TOOL            │
-│ 1. Batch Call (Deploy + Execute)         │
-│ 2. Create Wallet                         │
-│ 3. Change Wallet          10. Send ETH   │
-│ 4. Delete Wallet          11. Send Token │
-│ 5. Export Private Key     12. Info Wallet│
-│ 6. Import Wallet          13. Network    │
-│ 7. List Wallets           14. Claim Airdrop │
-│ 8. Rescue Assets          15. Wizard Deploy │
-│ 9. Revoke Delegation      16. Gas Fee    │
-│                           17. Mining POW │
-│                           18. Approval Manager │
-│ 0. Exit                                  │
-└──────────────────────────────────────────┘
-```
-
----
-
 ## 🏗️ Cara Kerja EIP-7702
-
-EIP-7702 memungkinkan sebuah EOA mengeksekusi kode kontrak dengan menandatangani *authorization* (tx type 4):
 
 ```
 ┌─────────┐   sign auth    ┌──────────────┐   type-4 tx   ┌─────────────┐
-│ EOA     │ ─────────────► │ Authorization│ ────────────► │ Kode akun   │
-(target)  │                │ {chainId,    │               │ 0xef0100‖impl│
+│   EOA   │ ─────────────► │ Authorization│ ────────────► │ Kode akun   │
+│ (target)│                │ {chainId,    │               │ 0xef0100‖impl│
 └─────────┘                │  impl,nonce} │               └──────┬──────┘
                            └──────────────┘                      │ delegatecall
                      sponsor bayar gas ─────────►        ┌──────▼──────┐
@@ -142,11 +129,17 @@ Test berhenti dengan aman (SKIP) jika wallet belum dana. Override:
 TEST_RPC_URL=https://your-sepolia-rpc TEST_PRIVATE_KEY=0x... npm test
 ```
 
-Cakupan: compile semua template (offline), RPC read-only, transfer ETH/token, seluruh varian ERC-20, Batch Call + delegasi, Rescue ETH/ERC20/ERC721, Revoke, Claim Airdrop, UUPS upgrade, scan/revoke approval, mining loop.
+Cakupan: compile semua template (offline), RPC read-only, transfer ETH/token, seluruh varian ERC-20, Batch Call + delegasi, Rescue ETH/ERC20/ERC721, Revoke, Claim Airdrop, UUPS upgrade, scan/revoke approval, mining loop — termasuk pengujian dengan **state mainnet asli** (fork + simulasi `eth_call`/`stateOverride`, lihat `test-fork.js` & `test-mainnet-sim.js`).
 
 Hasil uji terakhir: **41 PASS / 0 FAIL** — termasuk verifikasi delegasi (`0xef0100…`) dan revoke kembali ke EOA.
 
 Wallet test: buat wallet baru, simpan di `test-wallet.json` (sudah di-gitignore), fund 0.05–0.1 Sepolia ETH. Laporan tersimpan di `test-report.json`.
+
+<div align="center">
+<a href="https://github.com/nemoobc/EIP-7702-TOOL">
+  <img src="https://github-readme-stats.vercel.app/api/pin/?username=nemoobc&repo=EIP-7702-TOOL&theme=tokyonight&show_icons=true" />
+</a>
+</div>
 
 ---
 
@@ -201,20 +194,6 @@ Ya — Mainnet, Sepolia, Arbitrum, OP, Base, Polygon, BSC, dan custom network.
 
 ---
 
-## 📝 Changelog
-
-### v3.3.0
-- **Fixed:** Approval Manager kini scan approval nyata via event log `Approval` + verifikasi `allowance()` per spender; dukungan token kustom (testnet-ready)
-- **Added:** Sponsor revoke via EIP-7702 atomic (`approvalRevoker`); mode pembayaran gas Self/Sponsor
-- **Fixed:** Bug non-standard ERC20 (USDT) — kontrak `rescue`, `airdropClaimer`, dan `approvalRevoker` kini pakai low-level call agar kompatibel dengan token yang tidak mengembalikan `bool` (v1.1.0)
-- **Fixed:** Mining PoW throttle polling status tiap 3 detik; registry kontrak deploy per chainId; reuse kontrak batch verifikasi deployer
-- **Fixed:** Flash loan ERC-3156 mengirim alamat token yang benar; ERC-165 untuk ERC-721/1155; NFT token ID pakai BigInt; verifikasi Blockscout pakai endpoint `verifysourcecode`
-- **Changed:** Estimasi gas dinamis pada delegasi EIP-7702; config default Sepolia testnet
-- **Added:** Test suite lengkap — on-chain Sepolia (35 PASS), Approval Manager (5 PASS), mining loop end-to-end via mock faucet lokal, mainnet fork + simulasi state mainnet via `eth_call`/`stateOverride` (9 PASS)
-- **Changed:** README ditulis ulang; dependency terkunci via `package-lock.json`
-
----
-
 ## 💝 Donate
 
 **Ethereum / Sepolia:** `0x5e02fac179dfbd8a63fa7058011b348fdbba7158`
@@ -224,3 +203,9 @@ Ya — Mainnet, Sepolia, Arbitrum, OP, Base, Polygon, BSC, dan custom network.
 ## 📜 Lisensi
 
 MIT — lihat [LICENSE](LICENSE).
+
+<div align="center">
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=140&section=footer&text=Dibuat%20dengan%20%E2%9D%A4%EF%B8%8F%20dan%20%E2%98%95&fontSize=24&fontColor=ffffff&animation=fadeIn" width="100%" />
+
+</div>
