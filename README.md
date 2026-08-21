@@ -204,8 +204,6 @@ Ya — Mainnet, Sepolia, Arbitrum, OP, Base, Polygon, BSC, dan custom network.
 
 MIT — lihat [LICENSE](LICENSE).
 
-<div align="center">
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=140&section=footer&text=Dibuat%20dengan%20%E2%9D%A4%EF%B8%8F%20dan%20%E2%98%95&fontSize=24&fontColor=ffffff&animation=fadeIn" width="100%" />
-
-</div>
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=6,11,20&height=150&section=footer&text=Dibuat%20dengan%20%E2%9D%A4%EF%B8%8F%20dan%20%E2%98%95&fontSize=26&fontColor=ffffff&animation=twinkling" alt="footer"/>
+</p>
