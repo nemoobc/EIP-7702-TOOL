@@ -159,14 +159,6 @@ async function animateBox(title, lines, duration=3000, maxWidth=72){
   const iv=setInterval(()=>{ clearScreen(); printBox(title, lines, o, maxWidth); o=(o+1)%ANSI_COLORS.length; },100);
   await new Promise(r=>setTimeout(()=>{ clearInterval(iv); clearScreen(); r(); },duration));
 }
-async function getIpInfo(){
-  try{
-    const res=await fetch('http://ip-api.com/json/?fields=status,message,country,regionName,city,isp,query');
-    const d=await res.json();
-    if(d.status==='success') return {ip:d.query,country:d.country,region:d.regionName,city:d.city,isp:d.isp};
-  }catch(e){}
-  return null;
-}
 
 // ================= MAINNET SAFETY =================
 const MAINNET_CHAIN_IDS = [1];
@@ -2259,9 +2251,6 @@ let firstMenuLoad=true;
 async function showMainMenu(){
   clearScreen(); console.log('\n\n');
   if(firstMenuLoad){ await animateBox('EIP-7702 TOOL',['','','BY NEMO'],3000,72); firstMenuLoad=false; }
-  const ipInfo=await getIpInfo();
-  if(ipInfo){ printBox('INFO KONEKSI',[`IP: ${ipInfo.ip}`,`Negara: ${ipInfo.country}`,`Region: ${ipInfo.region}`,`Kota: ${ipInfo.city}`,`ISP: ${ipInfo.isp}`],0,72); }
-  else printBox('INFO KONEKSI',['IP: Tidak tersedia'],0,72);
   printBox('WALLET & EIP-7702 TOOL',[
     '1. Batch Call (Deploy + Execute)',
     '2. Create Wallet',
