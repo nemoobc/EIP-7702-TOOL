@@ -287,8 +287,6 @@ function rlpEncode(item){ if(item===undefined||item===null)throw new Error('RLP 
 // ================= SOLC SOURCES =================
 const RESCUE_SOURCE = `// SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.20;
-interface IERC20 { function transfer(address to, uint256 amount) external returns (bool); function balanceOf(address account) external view returns (uint256); }
-interface IERC721 { function transferFrom(address from, address to, uint256 id) external; }
 contract rescue {
     address public immutable SAFE;
     address public immutable RESCUER;
@@ -296,10 +294,16 @@ contract rescue {
     modifier onlyRescuer() { require(msg.sender == RESCUER, "rescue: caller is not rescuer"); _; }
     receive() external payable {}
     function rescueETH() external onlyRescuer { (bool success, ) = SAFE.call{value: address(this).balance}(""); require(success, "ETH transfer failed"); }
-    function rescueERC20(address token, uint256 amount) external onlyRescuer { require(IERC20(token).transfer(SAFE, amount), "ERC20 transfer failed"); }
-    function rescueERC20All(address token) external onlyRescuer { uint256 amount = IERC20(token).balanceOf(address(this)); require(IERC20(token).transfer(SAFE, amount), "ERC20 transfer failed"); }
-    function rescueERC721(address token, uint256[] calldata ids) external onlyRescuer { for (uint256 i=0; i<ids.length; ++i) IERC721(token).transferFrom(address(this), SAFE, ids[i]); }
-    function version() external pure returns (string memory) { return "1.0.0"; }
+    // Low-level call agar kompatibel dengan token non-standard (mis. USDT tidak mengembalikan bool)
+    function rescueERC20(address token, uint256 amount) external onlyRescuer { (bool success, ) = token.call(abi.encodeWithSelector(0xa9059cbb, SAFE, amount)); require(success, "ERC20 transfer failed"); }
+    function rescueERC20All(address token) external onlyRescuer {
+        (bool okBal, bytes memory ret) = token.call(abi.encodeWithSelector(0x70a08231, address(this)));
+        require(okBal && ret.length >= 32, "balanceOf failed");
+        (bool success, ) = token.call(abi.encodeWithSelector(0xa9059cbb, SAFE, abi.decode(ret, (uint256))));
+        require(success, "ERC20 transfer failed");
+    }
+    function rescueERC721(address token, uint256[] calldata ids) external onlyRescuer { for (uint256 i=0; i<ids.length; ++i) { (bool success, ) = token.call(abi.encodeWithSignature("transferFrom", address(this), SAFE, ids[i])); require(success, "ERC721 transfer failed"); } }
+    function version() external pure returns (string memory) { return "1.1.0"; }
 }`;
 
 const BATCH_SOURCE = `// SPDX-License-Identifier: UNLICENSED
@@ -327,7 +331,6 @@ contract batch {
 
 const AIRDROP_CLAIMER_SOURCE = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-interface IERC20 { function transfer(address to, uint256 amount) external returns (bool); function balanceOf(address account) external view returns (uint256); }
 contract airdropClaimer {
     address public immutable RESCUER;
     constructor(address rescuer) { require(rescuer != address(0), "RESCUER=0"); RESCUER = rescuer; }
@@ -341,24 +344,32 @@ contract airdropClaimer {
             (success, ) = safe.call{value: address(this).balance}("");
             require(success, "ETH transfer failed");
         } else {
-            require(IERC20(token).transfer(safe, IERC20(token).balanceOf(address(this))), "ERC20 transfer failed");
+            // Low-level call agar kompatibel dengan token non-standard (mis. USDT)
+            (bool okBal, bytes memory ret) = token.call(abi.encodeWithSelector(0x70a08231, address(this)));
+            require(okBal && ret.length >= 32, "balanceOf failed");
+            (success, ) = token.call(abi.encodeWithSelector(0xa9059cbb, safe, abi.decode(ret, (uint256))));
+            require(success, "ERC20 transfer failed");
         }
     }
-    function version() external pure returns (string memory) { return "1.0.0"; }
+    function version() external pure returns (string memory) { return "1.1.0"; }
 }`;
 
 const REVOKE_APPROVAL_SOURCE = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-interface IERC20Revoke { function approve(address spender, uint256 amount) external returns (bool); }
+
 contract approvalRevoker {
     address public immutable RESCUER;
     constructor(address rescuer) { require(rescuer != address(0), "RESCUER=0"); RESCUER = rescuer; }
     modifier onlyRescuer() { require(msg.sender == RESCUER, "approvalRevoker: caller is not rescuer"); _; }
+    // Low-level call agar kompatibel dengan token non-standard (mis. USDT tidak mengembalikan bool)
     function revoke(address[] calldata tokens, address[] calldata spenders) external onlyRescuer {
         require(tokens.length == spenders.length, "len mismatch");
-        for (uint256 i = 0; i < tokens.length; i++) IERC20Revoke(tokens[i]).approve(spenders[i], 0);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            (bool success, ) = tokens[i].call(abi.encodeWithSelector(0x095ea7b3, spenders[i], 0));
+            require(success, "revoke failed");
+        }
     }
-    function version() external pure returns (string memory) { return "1.0.0"; }
+    function version() external pure returns (string memory) { return "1.1.0"; }
 }`;
 
 // ================= WIZARD TEMPLATES =================
