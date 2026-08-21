@@ -2002,13 +2002,14 @@ async function fetchApprovalLogs(provider, tokenAddress, ownerTopic) {
   }
   throw new Error('getLogs gagal pada semua rentang');
 }
-async function scanApprovals(walletAddress, provider) {
+async function scanApprovals(walletAddress, provider, extraTokens = []) {
   const results = [];
+  const tokens = [...POPULAR_TOKENS, ...extraTokens];
   const ownerTopic = '0x' + walletAddress.toLowerCase().replace(/^0x/, '').padStart(64, '0');
-  for (const token of POPULAR_TOKENS) {
+  for (const token of tokens) {
     try {
       const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
-      let symbol = token.symbol;
+      let symbol = token.symbol || 'TOKEN';
       try { symbol = await contract.symbol(); } catch (e) {}
       let logs;
       try { logs = await fetchApprovalLogs(provider, token.address, ownerTopic); }
@@ -2038,8 +2039,15 @@ async function featureApprovalManager() {
   } catch (e) { console.log(chalk.red('Password salah atau file wallet rusak.')); return; }
   console.log(chalk.cyan(`
 Scanning approval untuk ${wallet.address}...`));
+  const extraTokens = [];
+  while (true) {
+    const custom = await ask(chalk.cyan('Tambah alamat token kustom untuk di-scan (kosongkan = lanjut): '));
+    if (!custom) break;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(custom)) { console.log(chalk.red('  Alamat token invalid.')); continue; }
+    extraTokens.push({ symbol: null, address: ethers.getAddress(custom) });
+  }
   const spinner = ora(chalk.blue('Membaca approval...')).start();
-  const approvals = await scanApprovals(wallet.address, provider);
+  const approvals = await scanApprovals(wallet.address, provider, extraTokens);
   spinner.stop();
   if (approvals.length === 0) {
     console.log(); console.log(chalk.green('  ✅ Tidak ada approval aktif ditemukan!'));
