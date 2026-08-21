@@ -7,7 +7,6 @@ const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { Buffer } = require('buffer');
 const solc = require('solc');
 
 const { createPublicClient, createWalletClient, http, parseEther, formatEther } = require('viem');
@@ -116,16 +115,6 @@ function getWalletPathByIdentifier(id) {
   }
   throw new Error(`Wallet "${id}" tidak ditemukan.`);
 }
-function getDefaultWalletPath() {
-  const wallets = listWalletFiles();
-  if (wallets.length === 0) throw new Error('Belum ada wallet tersimpan.');
-  const c = loadConfig();
-  if (c.defaultWallet) {
-    const w = wallets.find(x => x.address.toLowerCase() === c.defaultWallet.toLowerCase());
-    if (w) return w.path;
-  }
-  return wallets[0].path;
-}
 
 // ================= WARNA & TAMPILAN =================
 const ANSI_COLORS = [31,32,33,34,35,36,91,92,93,94,95,96];
@@ -181,7 +170,7 @@ async function getIpInfo(){
 
 // ================= MAINNET SAFETY =================
 const MAINNET_CHAIN_IDS = [1];
-const TESTNET_CHAIN_IDS = [11155111, 5, 11155112, 80001];
+const TESTNET_CHAIN_IDS = [11155111, 17000, 80002];
 function isMainnet(chainId) { return MAINNET_CHAIN_IDS.includes(Number(chainId)); }
 function isTestnet(chainId) { return TESTNET_CHAIN_IDS.includes(Number(chainId)); }
 function getNetworkStatusEmoji(chainId) {
@@ -298,8 +287,6 @@ function rlpEncode(item){ if(item===undefined||item===null)throw new Error('RLP 
 // ================= SOLC SOURCES =================
 const RESCUE_SOURCE = `// SPDX-License-Identifier: CC0-1.0
 pragma solidity ^0.8.20;
-interface IERC20 { function transfer(address to, uint256 amount) external returns (bool); function balanceOf(address account) external view returns (uint256); }
-interface IERC721 { function transferFrom(address from, address to, uint256 id) external; }
 contract rescue {
     address public immutable SAFE;
     address public immutable RESCUER;
@@ -307,10 +294,16 @@ contract rescue {
     modifier onlyRescuer() { require(msg.sender == RESCUER, "rescue: caller is not rescuer"); _; }
     receive() external payable {}
     function rescueETH() external onlyRescuer { (bool success, ) = SAFE.call{value: address(this).balance}(""); require(success, "ETH transfer failed"); }
-    function rescueERC20(address token, uint256 amount) external onlyRescuer { require(IERC20(token).transfer(SAFE, amount), "ERC20 transfer failed"); }
-    function rescueERC20All(address token) external onlyRescuer { uint256 amount = IERC20(token).balanceOf(address(this)); require(IERC20(token).transfer(SAFE, amount), "ERC20 transfer failed"); }
-    function rescueERC721(address token, uint256[] calldata ids) external onlyRescuer { for (uint256 i=0; i<ids.length; ++i) IERC721(token).transferFrom(address(this), SAFE, ids[i]); }
-    function version() external pure returns (string memory) { return "1.0.0"; }
+    // Low-level call agar kompatibel dengan token non-standard (mis. USDT tidak mengembalikan bool)
+    function rescueERC20(address token, uint256 amount) external onlyRescuer { (bool success, ) = token.call(abi.encodeWithSelector(0xa9059cbb, SAFE, amount)); require(success, "ERC20 transfer failed"); }
+    function rescueERC20All(address token) external onlyRescuer {
+        (bool okBal, bytes memory ret) = token.call(abi.encodeWithSelector(0x70a08231, address(this)));
+        require(okBal && ret.length >= 32, "balanceOf failed");
+        (bool success, ) = token.call(abi.encodeWithSelector(0xa9059cbb, SAFE, abi.decode(ret, (uint256))));
+        require(success, "ERC20 transfer failed");
+    }
+    function rescueERC721(address token, uint256[] calldata ids) external onlyRescuer { for (uint256 i=0; i<ids.length; ++i) { (bool success, ) = token.call(abi.encodeWithSignature("transferFrom", address(this), SAFE, ids[i])); require(success, "ERC721 transfer failed"); } }
+    function version() external pure returns (string memory) { return "1.1.0"; }
 }`;
 
 const BATCH_SOURCE = `// SPDX-License-Identifier: UNLICENSED
@@ -338,7 +331,6 @@ contract batch {
 
 const AIRDROP_CLAIMER_SOURCE = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-interface IERC20 { function transfer(address to, uint256 amount) external returns (bool); function balanceOf(address account) external view returns (uint256); }
 contract airdropClaimer {
     address public immutable RESCUER;
     constructor(address rescuer) { require(rescuer != address(0), "RESCUER=0"); RESCUER = rescuer; }
@@ -352,24 +344,32 @@ contract airdropClaimer {
             (success, ) = safe.call{value: address(this).balance}("");
             require(success, "ETH transfer failed");
         } else {
-            require(IERC20(token).transfer(safe, IERC20(token).balanceOf(address(this))), "ERC20 transfer failed");
+            // Low-level call agar kompatibel dengan token non-standard (mis. USDT)
+            (bool okBal, bytes memory ret) = token.call(abi.encodeWithSelector(0x70a08231, address(this)));
+            require(okBal && ret.length >= 32, "balanceOf failed");
+            (success, ) = token.call(abi.encodeWithSelector(0xa9059cbb, safe, abi.decode(ret, (uint256))));
+            require(success, "ERC20 transfer failed");
         }
     }
-    function version() external pure returns (string memory) { return "1.0.0"; }
+    function version() external pure returns (string memory) { return "1.1.0"; }
 }`;
 
 const REVOKE_APPROVAL_SOURCE = `// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-interface IERC20Revoke { function approve(address spender, uint256 amount) external returns (bool); }
+
 contract approvalRevoker {
     address public immutable RESCUER;
     constructor(address rescuer) { require(rescuer != address(0), "RESCUER=0"); RESCUER = rescuer; }
     modifier onlyRescuer() { require(msg.sender == RESCUER, "approvalRevoker: caller is not rescuer"); _; }
+    // Low-level call agar kompatibel dengan token non-standard (mis. USDT tidak mengembalikan bool)
     function revoke(address[] calldata tokens, address[] calldata spenders) external onlyRescuer {
         require(tokens.length == spenders.length, "len mismatch");
-        for (uint256 i = 0; i < tokens.length; i++) IERC20Revoke(tokens[i]).approve(spenders[i], 0);
+        for (uint256 i = 0; i < tokens.length; i++) {
+            (bool success, ) = tokens[i].call(abi.encodeWithSelector(0x095ea7b3, spenders[i], 0));
+            require(success, "revoke failed");
+        }
     }
-    function version() external pure returns (string memory) { return "1.0.0"; }
+    function version() external pure returns (string memory) { return "1.1.0"; }
 }`;
 
 // ================= WIZARD TEMPLATES =================
@@ -702,13 +702,6 @@ const DEPLOYED_CONTRACTS_FILE = path.join(NETWORK_DIR, 'deployed-contracts.json'
 function loadDeployedContracts() { try { if (fs.existsSync(DEPLOYED_CONTRACTS_FILE)) return JSON.parse(fs.readFileSync(DEPLOYED_CONTRACTS_FILE,'utf8')); } catch(e) {} return { batch: [], rescue: [], airdrop: [], proxy: [], revoker: [] }; }
 function getActiveChainIdNum() { try { return Number(loadConfig().chainId); } catch (e) { return 0; } }
 function saveDeployedContract(type, address, extra={}) { const data = loadDeployedContracts(); if (!data[type]) data[type] = []; data[type].push({ address, chainId: getActiveChainIdNum(), ...extra }); fs.writeFileSync(DEPLOYED_CONTRACTS_FILE, JSON.stringify(data, null, 2)); }
-function getLatestDeployedContract(type) {
-  const chainIdNum = getActiveChainIdNum();
-  const arr = (loadDeployedContracts()[type] || []).filter(it => typeof it === 'object' && Number(it.chainId) === chainIdNum);
-  if (arr.length === 0) return null;
-  const latest = arr[arr.length-1];
-  return typeof latest === 'object' ? latest.address : null;
-}
 function findRescueContract(rescuerAddress, safeAddress) {
   const chainIdNum = getActiveChainIdNum();
   for (const item of loadDeployedContracts().rescue || []) {
@@ -2002,13 +1995,14 @@ async function fetchApprovalLogs(provider, tokenAddress, ownerTopic) {
   }
   throw new Error('getLogs gagal pada semua rentang');
 }
-async function scanApprovals(walletAddress, provider) {
+async function scanApprovals(walletAddress, provider, extraTokens = []) {
   const results = [];
+  const tokens = [...POPULAR_TOKENS, ...extraTokens];
   const ownerTopic = '0x' + walletAddress.toLowerCase().replace(/^0x/, '').padStart(64, '0');
-  for (const token of POPULAR_TOKENS) {
+  for (const token of tokens) {
     try {
       const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
-      let symbol = token.symbol;
+      let symbol = token.symbol || 'TOKEN';
       try { symbol = await contract.symbol(); } catch (e) {}
       let logs;
       try { logs = await fetchApprovalLogs(provider, token.address, ownerTopic); }
@@ -2038,8 +2032,15 @@ async function featureApprovalManager() {
   } catch (e) { console.log(chalk.red('Password salah atau file wallet rusak.')); return; }
   console.log(chalk.cyan(`
 Scanning approval untuk ${wallet.address}...`));
+  const extraTokens = [];
+  while (true) {
+    const custom = await ask(chalk.cyan('Tambah alamat token kustom untuk di-scan (kosongkan = lanjut): '));
+    if (!custom) break;
+    if (!/^0x[0-9a-fA-F]{40}$/.test(custom)) { console.log(chalk.red('  Alamat token invalid.')); continue; }
+    extraTokens.push({ symbol: null, address: ethers.getAddress(custom) });
+  }
   const spinner = ora(chalk.blue('Membaca approval...')).start();
-  const approvals = await scanApprovals(wallet.address, provider);
+  const approvals = await scanApprovals(wallet.address, provider, extraTokens);
   spinner.stop();
   if (approvals.length === 0) {
     console.log(); console.log(chalk.green('  ✅ Tidak ada approval aktif ditemukan!'));
@@ -2327,13 +2328,16 @@ if (require.main === module) {
 module.exports = {
   APP_DIR, WALLET_DIR, NETWORK_DIR, CONFIG_FILE, DEFAULT_CONFIG,
   loadConfig, saveConfig, getProvider, getActiveRpcUrl, getViemChain,
-  listWalletFiles, getWalletPathByIdentifier, getDefaultWalletPath,
+  listWalletFiles, getWalletPathByIdentifier,
   rlpEncode, rlpEncodeBytes, rlpEncodeInteger, rlpEncodeList,
   RESCUE_SOURCE, BATCH_SOURCE, AIRDROP_CLAIMER_SOURCE, UUPS_PROXY_TEMPLATE, REVOKE_APPROVAL_SOURCE,
   WIZARD_ERC20_TEMPLATE, WIZARD_ERC721_TEMPLATE, WIZARD_ERC1155_TEMPLATE,
   compileContract, delegateWithViem, getDelegatedContract, sendAtomicRescue,
   verifyOnSourcify, verifyOnBlockscout, verifyOnBoth,
-  loadDeployedContracts, saveDeployedContract, getLatestDeployedContract,
+  loadDeployedContracts, saveDeployedContract,
   findRescueContract, findAirdropContract,
-  getEthPriceUsd, getGasSettings, scanApprovals
+  getEthPriceUsd, getGasSettings, scanApprovals,
+  Pk910Api, Pk910PowSocket, pk910GetDifficultyMask, pk910IsValidPowHash,
+  pk910ParseTarget, pk910CreateHashSolver, pk910GetPowParamsString,
+  featureMiningPow
 };
