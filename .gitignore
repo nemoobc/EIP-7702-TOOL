@@ -8,3 +8,4 @@ test-output.log
 
 # generated deployment data
 network/deployed-contracts.json
+fork-test.log
