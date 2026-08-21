@@ -99,13 +99,15 @@ Pilih menu `10`/`11` → pilih wallet → masukkan tujuan → mode manual/MAX �
 Menu `8` → deploy kontrak rescue (sekali, lalu reuse) → target hanya sign authorization → sponsor membayar gas → aset pindah atomik ke alamat SAFE.
 
 ### Approval Manager
-Menu `18` → scan approval aktif via event log `Approval` + verifikasi `allowance()` per spender → pilih yang mau di-revoke:
+Menu `18` → pilih mode scan:
+- **Token populer** — 19 token bawaan (USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, CRV, SNX, SUSHI, COMP, MKR, LDO) + alamat token kustom
+- **Menyeluruh** — semua token apa pun via [Etherscan API](https://etherscan.io) (API key gratis); riwayat approval diambil dari event log blockchain lalu diverifikasi `allowance()` per spender
+
+Lalu pilih yang mau di-revoke:
 - **Self** — owner bayar gas
 - **Sponsor** — via EIP-7702 atomic dengan kontrak `approvalRevoker`
 
-Bisa tambah alamat token kustom (berguna di testnet). Daftar bawaan: USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, CRV, SNX, SUSHI, COMP, MKR, LDO.
-
-> Di RPC publik, scan dibatasi riwayat ~1M blok terakhir. Gunakan RPC berbayar untuk riwayat penuh.
+> Di RPC publik, mode populer dibatasi riwayat ~1M blok terakhir. Mode menyeluruh tidak terpengaruh karena data diambil dari Etherscan.
 
 ### Wizard Deploy
 Menu `15` → pilih ERC-20/721/1155 → kombinasikan fitur (mintable, burnable, pausable, roles, permit, flash minting, UUPS proxy) → deploy → verifikasi otomatis ke Sourcify & Blockscout.
