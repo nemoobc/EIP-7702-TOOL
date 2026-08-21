@@ -2343,5 +2343,7 @@ module.exports = {
   verifyOnSourcify, verifyOnBlockscout, verifyOnBoth,
   loadDeployedContracts, saveDeployedContract, getLatestDeployedContract,
   findRescueContract, findAirdropContract,
-  getEthPriceUsd, getGasSettings, scanApprovals
+  getEthPriceUsd, getGasSettings, scanApprovals,
+  Pk910Api, Pk910PowSocket, pk910GetDifficultyMask, pk910IsValidPowHash,
+  pk910ParseTarget, pk910CreateHashSolver, pk910GetPowParamsString
 };
