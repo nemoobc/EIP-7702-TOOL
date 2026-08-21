@@ -1,7 +1,7 @@
 <!-- PROJECT SHIELDS -->
 <p align="center">
   <a href="https://github.com/nemoobc/EIP-7702-TOOL">
-    <img src="https://img.shields.io/badge/Version-3.1.0-brightgreen?style=for-the-badge&logo=github" alt="Version">
+    <img src="https://img.shields.io/badge/Version-3.2.0-brightgreen?style=for-the-badge&logo=github" alt="Version">
   </a>
   <a href="https://github.com/nemoobc/EIP-7702-TOOL/network/members">
     <img src="https://img.shields.io/github/forks/nemoobc/EIP-7702-TOOL?style=for-the-badge&logo=github&color=blue" alt="Forks">
@@ -574,12 +574,13 @@ Claim ETH via PoW mining dari PK910 Sepolia Faucet.
 Kelola ERC-20 approval aktif pada wallet.
 
 **Fitur:**
-- ✅ Scan semua approval aktif dari 20 token populer
-- ✅ Pilih approval mana yang mau di-revoke (Revoke Selected)
-- ✅ Revoke semua approval sekaligus (Revoke All)
+- ✅ Scan approval **nyata** via event log `Approval` dari 19 token populer (bukan cuma cek allowance ke alamat nol)
+- ✅ Verifikasi ulang setiap spender via `allowance()` — hanya approval yang masih aktif ditampilkan
+- ✅ Tampilkan spender per approval, pilih mana yang mau di-revoke
+- ✅ Rentang scan adaptif (1M → 100k → 10k → 2k blok) agar tetap jalan di RPC publik yang membatasi `eth_getLogs`
 - ✅ Mode pembayaran gas:
-  - **Self Revoke** — Owner bayar gas sendiri
-  - **Sponsor Revoke** — Sponsor bayar gas, owner hanya sign
+  - **Self Revoke** — Owner bayar gas sendiri (`approve(spender, 0)`)
+  - **Sponsor Revoke** — Sponsor bayar gas via **EIP-7702 atomic**: kontrak `approvalRevoker` di-deploy sponsor, EOA owner didelegasikan atomik, revoke dieksekusi sebagai owner
 
 **Cara Pakai:**
 ```
@@ -592,7 +593,7 @@ Kelola ERC-20 approval aktif pada wallet.
 ```
 
 **Token yang Di-scan:**
-USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, FIL, CRV, SNX, SUSHI, COMP, MKR, LDO
+USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, CRV, SNX, SUSHI, COMP, MKR, LDO
 
 **Contoh Tampilan:**
 ```
@@ -604,20 +605,18 @@ USDT, USDC, DAI, WETH, WBTC, LINK, UNI, AAVE, SHIB, MATIC, ARB, OP, PEPE, FIL, C
   Wallet: 0x1234...5678
   Scanning approval...
 
-  Ditemukan 5 approval aktif:
+  Ditemukan 3 approval aktif:
 
-  ☑ USDT   Allowance: 999,999.00      ← REVOKE
-  ☑ WETH   Allowance: 5.0             ← REVOKE
-  ☐ DAI    Allowance: 1,000.0
-  ☑ UNI    Allowance: 100.0           ← REVOKE
-  ☐ LINK   Allowance: 50.0
-
-  3 approval akan di-revoke.
+  1. USDT → spender 0x63c79FcC... (unlimited) → Revoke? (y/n):
+  2. WETH → spender 0x1111111254... (5.0)     → Revoke? (y/n):
+  3. DAI  → spender 0x68b3465833... (1000.0)  → Revoke? (y/n):
 
   Pilih mode pembayaran gas:
     1) Self — bayar gas sendiri
-    2) Sponsor — sponsor bayar gas
+    2) Sponsor — sponsor bayar gas (EIP-7702 atomic)
 ```
+
+> ⚠️ Catatan: pada RPC publik dengan batas `getLogs`, hanya approval dalam rentang blok terbaru yang terdeteksi. Gunakan RPC berbayar (Alchemy/QuickNode) untuk scan riwayat penuh.
 
 **Mengapa Penting:**
 - Mencegah serangan drainer yang menggunakan approval lama
@@ -734,9 +733,11 @@ TEST_RPC_URL=https://your-sepolia-rpc.example TEST_PRIVATE_KEY=0x... npm test
 
 Cakupan test:
 
-- **Offline** — compile seluruh source rescue, batch, airdrop claimer, UUPS proxy, ERC-721, ERC-1155, mock receiver, dan seluruh kombinasi ERC-20.
+- **Offline** — compile seluruh source rescue, batch, airdrop claimer, approval revoker, UUPS proxy, ERC-721, ERC-1155, mock receiver, dan seluruh kombinasi ERC-20.
 - **Read-only** — validasi chain ID Sepolia, block terbaru, gas fee, dan harga ETH.
 - **On-chain** — transfer ETH/token, deploy ERC-20, managed/roles/pausable/burnable/permit/callback/flash minting, Batch Call + EIP-7702 delegation, Rescue ETH/ERC-20/ERC-721, Revoke Delegation, Claim Airdrop, ERC-1155, dan UUPS proxy upgrade.
+
+Hasil uji terakhir (Sepolia): **35 PASS / 0 FAIL / 0 SKIP** — termasuk verifikasi delegasi EIP-7702 (`0xef0100…`) dan revoke kembali ke EOA.
 
 ### Wallet test
 
@@ -778,7 +779,7 @@ A: Pilih menu `18. Approval Manager`, pilih wallet, lalu pilih approval yang mau
 
 **Q: Berapa banyak token yang di-scan di Approval Manager?**
 
-A: Saat ini 20 token populer (USDT, USDC, DAI, WETH, dll). Bisa ditambah jika diperlukan.
+A: Saat ini 19 token populer (USDT, USDC, DAI, WETH, dll). Bisa ditambah jika diperlukan.
 
 **Q: Apakah support multiple chain?**
 
@@ -801,6 +802,19 @@ A: Ya! Support Ethereum Mainnet, Sepolia, Arbitrum, Optimism, Base, Polygon, BSC
 ---
 
 ## 📝 Changelog
+
+### v3.2.0
+- ✅ **Fixed:** Approval Manager kini scan approval nyata via event log `Approval` + verifikasi `allowance()` per spender (sebelumnya hanya cek allowance ke alamat nol sehingga tidak pernah menemukan approval)
+- ✅ **Added:** Mode Sponsor Revoke via EIP-7702 atomic dengan kontrak `approvalRevoker` (sponsor bayar gas, revoke dieksekusi sebagai owner)
+- ✅ **Fixed:** Rentang scan adaptif untuk RPC publik yang membatasi `eth_getLogs`
+- ✅ **Fixed:** Duplikat alamat token FIL (= CRV) dihapus dari daftar scan
+- ✅ **Fixed:** Mining PoW tidak lagi melakukan HTTP request setiap hash (status di-poll tiap 3 detik)
+- ✅ **Fixed:** Kontrak deploy tersimpan per chainId; reuse kontrak batch kini memverifikasi deployer
+- ✅ **Fixed:** Flash loan ERC-3156 mengirim alamat token yang benar ke callback
+- ✅ **Fixed:** Verifikasi Blockscout menggunakan endpoint `verifysourcecode` + polling status
+- ✅ **Fixed:** ERC-721/1155 template mendukung ERC-165; NFT token ID pakai BigInt
+- ✅ **Changed:** Estimasi gas dinamis pada transaksi delegasi EIP-7702
+- ✅ **Changed:** Config default aktif kembali ke Sepolia testnet
 
 ### v3.1.0 (2024-XX-XX)
 - ✅ **Added:** Approval Manager (revoke ERC-20 approvals)
