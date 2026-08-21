@@ -7,7 +7,6 @@ const readline = require('readline');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
-const { Buffer } = require('buffer');
 const solc = require('solc');
 
 const { createPublicClient, createWalletClient, http, parseEther, formatEther } = require('viem');
@@ -116,16 +115,6 @@ function getWalletPathByIdentifier(id) {
   }
   throw new Error(`Wallet "${id}" tidak ditemukan.`);
 }
-function getDefaultWalletPath() {
-  const wallets = listWalletFiles();
-  if (wallets.length === 0) throw new Error('Belum ada wallet tersimpan.');
-  const c = loadConfig();
-  if (c.defaultWallet) {
-    const w = wallets.find(x => x.address.toLowerCase() === c.defaultWallet.toLowerCase());
-    if (w) return w.path;
-  }
-  return wallets[0].path;
-}
 
 // ================= WARNA & TAMPILAN =================
 const ANSI_COLORS = [31,32,33,34,35,36,91,92,93,94,95,96];
@@ -181,7 +170,7 @@ async function getIpInfo(){
 
 // ================= MAINNET SAFETY =================
 const MAINNET_CHAIN_IDS = [1];
-const TESTNET_CHAIN_IDS = [11155111, 5, 11155112, 80001];
+const TESTNET_CHAIN_IDS = [11155111, 17000, 80002];
 function isMainnet(chainId) { return MAINNET_CHAIN_IDS.includes(Number(chainId)); }
 function isTestnet(chainId) { return TESTNET_CHAIN_IDS.includes(Number(chainId)); }
 function getNetworkStatusEmoji(chainId) {
@@ -702,13 +691,6 @@ const DEPLOYED_CONTRACTS_FILE = path.join(NETWORK_DIR, 'deployed-contracts.json'
 function loadDeployedContracts() { try { if (fs.existsSync(DEPLOYED_CONTRACTS_FILE)) return JSON.parse(fs.readFileSync(DEPLOYED_CONTRACTS_FILE,'utf8')); } catch(e) {} return { batch: [], rescue: [], airdrop: [], proxy: [], revoker: [] }; }
 function getActiveChainIdNum() { try { return Number(loadConfig().chainId); } catch (e) { return 0; } }
 function saveDeployedContract(type, address, extra={}) { const data = loadDeployedContracts(); if (!data[type]) data[type] = []; data[type].push({ address, chainId: getActiveChainIdNum(), ...extra }); fs.writeFileSync(DEPLOYED_CONTRACTS_FILE, JSON.stringify(data, null, 2)); }
-function getLatestDeployedContract(type) {
-  const chainIdNum = getActiveChainIdNum();
-  const arr = (loadDeployedContracts()[type] || []).filter(it => typeof it === 'object' && Number(it.chainId) === chainIdNum);
-  if (arr.length === 0) return null;
-  const latest = arr[arr.length-1];
-  return typeof latest === 'object' ? latest.address : null;
-}
 function findRescueContract(rescuerAddress, safeAddress) {
   const chainIdNum = getActiveChainIdNum();
   for (const item of loadDeployedContracts().rescue || []) {
@@ -2335,13 +2317,13 @@ if (require.main === module) {
 module.exports = {
   APP_DIR, WALLET_DIR, NETWORK_DIR, CONFIG_FILE, DEFAULT_CONFIG,
   loadConfig, saveConfig, getProvider, getActiveRpcUrl, getViemChain,
-  listWalletFiles, getWalletPathByIdentifier, getDefaultWalletPath,
+  listWalletFiles, getWalletPathByIdentifier,
   rlpEncode, rlpEncodeBytes, rlpEncodeInteger, rlpEncodeList,
   RESCUE_SOURCE, BATCH_SOURCE, AIRDROP_CLAIMER_SOURCE, UUPS_PROXY_TEMPLATE, REVOKE_APPROVAL_SOURCE,
   WIZARD_ERC20_TEMPLATE, WIZARD_ERC721_TEMPLATE, WIZARD_ERC1155_TEMPLATE,
   compileContract, delegateWithViem, getDelegatedContract, sendAtomicRescue,
   verifyOnSourcify, verifyOnBlockscout, verifyOnBoth,
-  loadDeployedContracts, saveDeployedContract, getLatestDeployedContract,
+  loadDeployedContracts, saveDeployedContract,
   findRescueContract, findAirdropContract,
   getEthPriceUsd, getGasSettings, scanApprovals,
   Pk910Api, Pk910PowSocket, pk910GetDifficultyMask, pk910IsValidPowHash,
