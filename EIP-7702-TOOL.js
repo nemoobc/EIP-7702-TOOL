@@ -45,6 +45,7 @@ function loadConfig() {
   try {
     if (fs.existsSync(CONFIG_FILE)) {
       const config = JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+      const before = JSON.stringify(config);
       if (!config.networks) config.networks = [];
       for (const defNet of DEFAULT_CONFIG.networks) {
         if (!config.networks.some(n => Number(n.chainId) === Number(defNet.chainId))) config.networks.push(defNet);
@@ -55,7 +56,7 @@ function loadConfig() {
         config.networkName = DEFAULT_CONFIG.networkName;
       }
       if (!config.gasSettings) config.gasSettings = DEFAULT_CONFIG.gasSettings;
-      saveConfig(config);
+      if (JSON.stringify(config) !== before) saveConfig(config);
       return config;
     }
   } catch (e) {}
@@ -220,12 +221,8 @@ async function suggestRpcProvider() {
   console.log(chalk.yellow('  💡 RPC publik mungkin tidak stabil. Rekomendasi: Alchemy / QuickNode'));
   const choice = await ask(chalk.yellow('  Pilihan (1/2/3 = Ganti RPC, Enter = Pakai yang sekarang): '));
   if (choice === '1' || choice === '2' || choice === '3') {
-    const rpcUrls = {
-      '1': 'https://eth-mainnet.g.alchemy.com/v2/YOUR_API_KEY',
-      '2': 'https://eth-mainnet.quiknode.pro/YOUR_API_KEY',
-      '3': `https://mainnet.infura.io/v3/YOUR_API_KEY`,
-    };
-    const newRpc = await ask(chalk.cyan(`  Masukkan RPC URL Alchemy: `));
+    const providerNames = { '1': 'Alchemy', '2': 'QuickNode', '3': 'Infura' };
+    const newRpc = await ask(chalk.cyan(`  Masukkan RPC URL ${providerNames[choice]}: `));
     if (newRpc && newRpc.startsWith('http')) {
       c.rpcUrl = newRpc;
       saveConfig(c);
@@ -361,6 +358,20 @@ contract airdropClaimer {
     function version() external pure returns (string memory) { return "1.0.0"; }
 }`;
 
+const REVOKE_APPROVAL_SOURCE = `// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.20;
+interface IERC20Revoke { function approve(address spender, uint256 amount) external returns (bool); }
+contract approvalRevoker {
+    address public immutable RESCUER;
+    constructor(address rescuer) { require(rescuer != address(0), "RESCUER=0"); RESCUER = rescuer; }
+    modifier onlyRescuer() { require(msg.sender == RESCUER, "approvalRevoker: caller is not rescuer"); _; }
+    function revoke(address[] calldata tokens, address[] calldata spenders) external onlyRescuer {
+        require(tokens.length == spenders.length, "len mismatch");
+        for (uint256 i = 0; i < tokens.length; i++) IERC20Revoke(tokens[i]).approve(spenders[i], 0);
+    }
+    function version() external pure returns (string memory) { return "1.0.0"; }
+}`;
+
 // ================= WIZARD TEMPLATES =================
 function WIZARD_ERC20_TEMPLATE(name, symbol, supply, features) {
   let ownerCode = '';
@@ -388,7 +399,7 @@ function WIZARD_ERC20_TEMPLATE(name, symbol, supply, features) {
   }
   if (hasFlashMinting) {
     interfaceCode += `interface IERC3156FlashBorrower { function onFlashLoan(address initiator, address token, uint256 amount, uint256 fee, bytes calldata data) external returns (bytes32); }`;
-    featureCode += `function flashLoan(address receiver, uint256 amount, bytes calldata data) external { uint256 supplyBefore = totalSupply; _mint(receiver, amount); if (receiver.code.length > 0) { require(IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, address(0), amount, 0, data) == keccak256("ERC3156FlashBorrower.onFlashLoan"), "invalid callback"); } _burn(receiver, amount); require(totalSupply == supplyBefore, "flash failed"); }`;
+    featureCode += `function flashLoan(address receiver, uint256 amount, bytes calldata data) external { uint256 supplyBefore = totalSupply; _mint(receiver, amount); if (receiver.code.length > 0) { require(IERC3156FlashBorrower(receiver).onFlashLoan(msg.sender, address(this), amount, 0, data) == keccak256("ERC3156FlashBorrower.onFlashLoan"), "invalid callback"); } _burn(receiver, amount); require(totalSupply == supplyBefore, "flash failed"); }`;
   }
   if (hasPermit) {
     featureCode += `mapping(address => uint256) public nonces; bytes32 public constant PERMIT_TYPEHASH = keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)"); bytes32 public constant EIP712_DOMAIN_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"); function DOMAIN_SEPARATOR() public view returns (bytes32) { return keccak256(abi.encode(EIP712_DOMAIN_TYPEHASH, keccak256(bytes(name)), keccak256(bytes("1")), block.chainid, address(this))); } function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external { require(deadline >= block.timestamp, "expired"); uint256 nonce = nonces[owner]; bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, nonce, deadline)); bytes32 digest = keccak256(abi.encodePacked("\\x19\\x01", DOMAIN_SEPARATOR(), structHash)); address signer = ecrecover(digest, v, r, s); require(signer != address(0) && signer == owner, "invalid signature"); nonces[owner] = nonce + 1; allowance[owner][spender] = value; emit Approval(owner, spender, value); }`;
@@ -549,7 +560,7 @@ contract ${name} {
     function transferFrom(address from, address to, uint256 id) external { require(to != address(0), "transfer zero"); require(ownerOf[id] == from, "not owner"); require(msg.sender == from || getApproved[id] == msg.sender || isApprovedForAll[from][msg.sender], "not authorized"); delete getApproved[id]; ownerOf[id] = to; balanceOf[from]--; balanceOf[to]++; emit Transfer(from, to, id); }
     function approve(address spender, uint256 id) external { require(ownerOf[id] == msg.sender, "not owner"); getApproved[id] = spender; emit Approval(msg.sender, spender, id); }
     function setApprovalForAll(address operator, bool approved) external { isApprovedForAll[msg.sender][operator] = approved; emit ApprovalForAll(msg.sender, operator, approved); }
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) { return interfaceId == 0x80ac58cd || interfaceId == 0x5b5e139f; }
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) { return interfaceId == 0x01ffc9a7 || interfaceId == 0x80ac58cd || interfaceId == 0x5b5e139f; }
 }`;
 
 const WIZARD_ERC1155_TEMPLATE = (name) => `// SPDX-License-Identifier: MIT
@@ -570,7 +581,7 @@ contract ${name} {
     function mint(address to, uint256 id, uint256 amount) external onlyOwner { require(to != address(0), "mint zero"); require(amount > 0, "amount zero"); balanceOf[id][to] += amount; emit TransferSingle(msg.sender, address(0), to, id, amount); }
     function safeTransferFrom(address from, address to, uint256 id, uint256 amount, bytes calldata data) external { require(from == msg.sender || isApprovedForAll[from][msg.sender], "not authorized"); require(balanceOf[id][from] >= amount, "balance low"); balanceOf[id][from] -= amount; balanceOf[id][to] += amount; emit TransferSingle(msg.sender, from, to, id, amount); }
     function setApprovalForAll(address operator, bool approved) external { isApprovedForAll[msg.sender][operator] = approved; emit ApprovalForAll(msg.sender, operator, approved); }
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool) { return interfaceId == 0xd9b67a26 || interfaceId == 0x0e89341c; }
+    function supportsInterface(bytes4 interfaceId) external pure returns (bool) { return interfaceId == 0x01ffc9a7 || interfaceId == 0xd9b67a26 || interfaceId == 0x0e89341c; }
 }`;
 
 // ================= COMPILE & VERIFIKASI =================
@@ -652,16 +663,35 @@ async function verifyOnBlockscout({ address, sourceCode, contractName, chainId, 
   try {
     const compilerversion = formatSolcVersionForBlockscout();
     const body = new URLSearchParams({
-      module: 'contract', action: 'verify', addressHash: address, name: contractName,
-      contractSourceCode: sourceCode, contractName: contractName, compilerVersion: compilerversion,
-      optimization: optimization ? 'true' : 'false', runs: optimizationRuns ? String(optimizationRuns) : '200'
+      module: 'contract', action: 'verifysourcecode',
+      contractAddress: address, sourceCode: sourceCode,
+      codeformat: 'solidity-single-file', contractname: contractName,
+      compilerversion, optimizationUsed: optimization ? '1' : '0',
+      runs: String(optimizationRuns || 200), licenseType: '3'
     });
-    const res = await fetch(baseUrl + '/api?' + body.toString(), { method: 'POST' });
+    const res = await fetch(baseUrl + '/api', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body: body.toString() });
     const json = await res.json();
-    if (json.status === '1' || json.result === 'Verified' || json.result === 'Already verified') {
-      spinner.succeed(chalk.green('✅ Terverifikasi di Blockscout!'));
-      console.log(chalk.gray('   ' + baseUrl + '/address/' + address + '#code'));
-    } else spinner.fail(chalk.red('Gagal verifikasi Blockscout: ' + (json.result || json.message || 'unknown')));
+    if (json.status !== '1' || !json.result) {
+      const msg = String(json.result || json.message || 'unknown');
+      if (msg.toLowerCase().includes('already verified')) {
+        spinner.succeed(chalk.green('✅ Terverifikasi di Blockscout!'));
+        console.log(chalk.gray('   ' + baseUrl + '/address/' + address + '#code'));
+      } else spinner.fail(chalk.red('Gagal submit verifikasi Blockscout: ' + msg));
+      return;
+    }
+    const guid = json.result;
+    for (let i = 0; i < 10; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      const checkUrl = baseUrl + '/api?module=contract&action=checkverifystatus&guid=' + encodeURIComponent(guid);
+      const checkJson = await (await fetch(checkUrl)).json();
+      if (checkJson.status === '1' && String(checkJson.result).toLowerCase() === 'pending') continue;
+      if (checkJson.status === '1') {
+        spinner.succeed(chalk.green('✅ Terverifikasi di Blockscout!'));
+        console.log(chalk.gray('   ' + baseUrl + '/address/' + address + '#code'));
+      } else spinner.fail(chalk.red('Gagal verifikasi Blockscout: ' + (checkJson.result || checkJson.message || 'unknown')));
+      return;
+    }
+    spinner.warn(chalk.yellow('⏱️ Timeout menunggu hasil verifikasi Blockscout.'));
   } catch(e) { spinner.fail(chalk.red('Error Blockscout: ' + e.message)); }
 }
 
@@ -669,11 +699,34 @@ async function verifyOnBoth(params) { await verifyOnSourcify(params); await veri
 
 // ================= DEPLOYED CONTRACTS =================
 const DEPLOYED_CONTRACTS_FILE = path.join(NETWORK_DIR, 'deployed-contracts.json');
-function loadDeployedContracts() { try { if (fs.existsSync(DEPLOYED_CONTRACTS_FILE)) return JSON.parse(fs.readFileSync(DEPLOYED_CONTRACTS_FILE,'utf8')); } catch(e) {} return { batch: [], rescue: [], airdrop: [], proxy: [] }; }
-function saveDeployedContract(type, address, extra={}) { const data = loadDeployedContracts(); if (!data[type]) data[type] = []; data[type].push({ address, ...extra }); fs.writeFileSync(DEPLOYED_CONTRACTS_FILE, JSON.stringify(data, null, 2)); }
-function getLatestDeployedContract(type) { const arr = loadDeployedContracts()[type] || []; if (arr.length === 0) return null; const latest = arr[arr.length-1]; return typeof latest === 'object' ? latest.address : latest; }
-function findRescueContract(rescuerAddress, safeAddress) { const arr = loadDeployedContracts().rescue || []; for (const item of arr) { if (item.rescuer && item.safe && item.rescuer.toLowerCase()===rescuerAddress.toLowerCase() && item.safe.toLowerCase()===safeAddress.toLowerCase()) return item.address; } return null; }
-function findAirdropContract(rescuerAddress, safeAddress) { const arr = loadDeployedContracts().airdrop || []; for (const item of arr) { if (item.rescuer && item.safe && item.rescuer.toLowerCase()===rescuerAddress.toLowerCase() && item.safe.toLowerCase()===safeAddress.toLowerCase()) return item.address; } return null; }
+function loadDeployedContracts() { try { if (fs.existsSync(DEPLOYED_CONTRACTS_FILE)) return JSON.parse(fs.readFileSync(DEPLOYED_CONTRACTS_FILE,'utf8')); } catch(e) {} return { batch: [], rescue: [], airdrop: [], proxy: [], revoker: [] }; }
+function getActiveChainIdNum() { try { return Number(loadConfig().chainId); } catch (e) { return 0; } }
+function saveDeployedContract(type, address, extra={}) { const data = loadDeployedContracts(); if (!data[type]) data[type] = []; data[type].push({ address, chainId: getActiveChainIdNum(), ...extra }); fs.writeFileSync(DEPLOYED_CONTRACTS_FILE, JSON.stringify(data, null, 2)); }
+function getLatestDeployedContract(type) {
+  const chainIdNum = getActiveChainIdNum();
+  const arr = (loadDeployedContracts()[type] || []).filter(it => typeof it === 'object' && Number(it.chainId) === chainIdNum);
+  if (arr.length === 0) return null;
+  const latest = arr[arr.length-1];
+  return typeof latest === 'object' ? latest.address : null;
+}
+function findRescueContract(rescuerAddress, safeAddress) {
+  const chainIdNum = getActiveChainIdNum();
+  for (const item of loadDeployedContracts().rescue || []) {
+    if (typeof item !== 'object') continue;
+    if (Number(item.chainId) !== chainIdNum) continue;
+    if (item.rescuer && item.safe && item.rescuer.toLowerCase()===rescuerAddress.toLowerCase() && item.safe.toLowerCase()===safeAddress.toLowerCase()) return item.address;
+  }
+  return null;
+}
+function findAirdropContract(rescuerAddress, safeAddress) {
+  const chainIdNum = getActiveChainIdNum();
+  for (const item of loadDeployedContracts().airdrop || []) {
+    if (typeof item !== 'object') continue;
+    if (Number(item.chainId) !== chainIdNum) continue;
+    if (item.rescuer && item.safe && item.rescuer.toLowerCase()===rescuerAddress.toLowerCase() && item.safe.toLowerCase()===safeAddress.toLowerCase()) return item.address;
+  }
+  return null;
+}
 
 // ================= EIP-7702 HELPERS =================
 async function delegateWithViem(privateKey, implAddress, rpcUrl, nonceOverride, sponsorPrivateKey, verbose=true, data='0x') {
@@ -714,6 +767,10 @@ async function delegateWithViem(privateKey, implAddress, rpcUrl, nonceOverride, 
   } catch (e) {}
   const txOptions = { to: account.address, authorizationList: [authorization], gas: 500000n, maxFeePerGas, maxPriorityFeePerGas, value: 0n, data };
   if (isSelfSponsored) txOptions.nonce = delegatorNonce;
+  try {
+    const estimated = await publicClient.estimateGas({ account: sponsorAccount.address, to: account.address, data, value: 0n });
+    txOptions.gas = (estimated * 120n) / 100n + 60000n;
+  } catch (e) { /* fallback ke 500000n */ }
   const txHash = await walletClient.sendTransaction(txOptions);
   console.log(chalk.green('✅ Transaksi EIP-7702 terkirim!')); console.log('Hash:', txHash);
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
@@ -1059,8 +1116,12 @@ async function featureBatchCall(){
   let artifact;
   try{ artifact=compileContract(BATCH_SOURCE,'batch'); spinner.succeed(chalk.green('Compile sukses.')); }catch(e){spinner.fail(chalk.red('Compile gagal.'));console.error(e.message);return;}
   const ethProvider=new ethers.JsonRpcProvider(rpcUrl);
-  let implAddress=getLatestDeployedContract('batch');
-  if(implAddress){ console.log(chalk.yellow('ℹ️  Kontrak batch terakhir: '+implAddress)); const reuse=await ask(chalk.cyan('Gunakan kontrak existing? (y/n): ')); if(reuse.toLowerCase()!=='y') implAddress=null; }
+  const chainIdNum = Number(loadConfig().chainId);
+  let implAddress=null;
+  for (const it of (loadDeployedContracts().batch||[]).slice().reverse()) {
+    if (typeof it === 'object' && Number(it.chainId) === chainIdNum && it.deployer && it.deployer.toLowerCase() === targetAddress.toLowerCase()) { implAddress = it.address; break; }
+  }
+  if(implAddress){ console.log(chalk.green('✅ Kontrak batch milik wallet ini: '+implAddress)); const reuse=await ask(chalk.cyan('Gunakan kontrak existing? (y/n): ')); if(reuse.toLowerCase()!=='y') implAddress=null; }
   if(!implAddress){
     spinner=ora(chalk.blue('Deploy batch...')).start();
     try{
@@ -1075,7 +1136,7 @@ async function featureBatchCall(){
       const activeNetwork=await ethProvider.getNetwork();
       const activeChainId=Number(activeNetwork.chainId);
       await verifyOnBoth({address:implAddress,sourceCode:BATCH_SOURCE,contractName:'batch',creationTxHash:deployTx.hash,chainId:activeChainId});
-      saveDeployedContract('batch',implAddress);
+      saveDeployedContract('batch',implAddress,{deployer:wallet.address});
     }catch(err){spinner.fail(chalk.red('Gagal deploy.'));console.error(err.shortMessage||err.message);return;}
   }
   const currentDelegate=await getDelegatedContract(targetAddress,ethProvider);
@@ -1184,7 +1245,7 @@ async function featureRescue(){
   }else if(assetType==='3'){
     nftAddress=await ask(chalk.cyan('Alamat kontrak NFT (ERC-721): '));
     const idsInput=await ask(chalk.cyan('Token IDs (pisahkan dengan koma): '));
-    ids=idsInput.split(',').map(s=>parseInt(s.trim(),10)).filter(n=>!isNaN(n));
+    ids=idsInput.split(',').map(s=>s.trim()).filter(s=>/^\d+$/.test(s)).map(s=>BigInt(s));
     if(ids.length===0){console.log(chalk.red('Tidak ada ID valid.'));return;}
     callData=iface.encodeFunctionData('rescueERC721',[nftAddress,ids]);
   }else{console.log(chalk.red('Pilihan tidak valid.'));return;}
@@ -1515,10 +1576,11 @@ async function featureWizardDeploy(){
         console.log(chalk.green('Implementation address:'),implAddress);
       }catch(e){spinner.fail(chalk.red('Gagal deploy implementation.'));console.error(e.shortMessage||e.message);return;}
       let proxyAddress = null;
+      const chainIdNum = Number(loadConfig().chainId);
       const allProxies = loadDeployedContracts().proxy || [];
       const myProxies = allProxies.filter(p => {
         const item = typeof p === 'object' ? p : { address: p, admin: null };
-        return item.admin && deployer && item.admin.toLowerCase() === deployer.address.toLowerCase();
+        return item.admin && deployer && Number(item.chainId) === chainIdNum && item.admin.toLowerCase() === deployer.address.toLowerCase();
       });
       if (myProxies.length > 0) {
         printBox('Pilih Proxy yang Pernah Anda Deploy', myProxies.map((p, i) => {
@@ -1779,6 +1841,7 @@ async function featureMiningPow() {
     let hashes = 0, sharesFound = 0, lastReport = Date.now();
     const startTime = Date.now();
     let checkpointClaimed = false;
+    let lastStatusCheck = Date.now();
     const CHECKPOINT_WEI = parseEther('0.05');
     while (balance < targetWei) {
       const hash = solver(preimageHex, nonce); hashes++;
@@ -1796,9 +1859,13 @@ async function featureMiningPow() {
         lastReport = Date.now();
       }
       if (hashes % 250 === 0) await new Promise(r => setImmediate(r));
-      status = await api.getSessionStatus(sessionId);
-      if (status.status === 'failed') throw new Error(`[${status.failedCode || 'SESSION_FAILED'}] ${status.failedReason || 'gagal'}`);
-      if (status.balance !== undefined) balance = BigInt(status.balance);
+      // Polling status dibatasi tiap 3 detik agar tidak mengganggu loop hashing
+      if (Date.now() - lastStatusCheck >= 3000) {
+        lastStatusCheck = Date.now();
+        status = await api.getSessionStatus(sessionId);
+        if (status.status === 'failed') throw new Error(`[${status.failedCode || 'SESSION_FAILED'}] ${status.failedReason || 'gagal'}`);
+        if (status.balance !== undefined) balance = BigInt(status.balance);
+      }
 
       // Checkpoint: tawarkan claim di 0.05 ETH
       if (!checkpointClaimed && balance >= CHECKPOINT_WEI) {
@@ -1910,7 +1977,6 @@ const POPULAR_TOKENS = [
   { symbol: 'ARB', address: '0xB50721BCf8d664c30412Cfbc6cf7a15145234ad1' },
   { symbol: 'OP', address: '0x4200000000000000000000000000000000000042' },
   { symbol: 'PEPE', address: '0x6982508145454Ce325dDbE47a25d4ec3d2311933' },
-  { symbol: 'FIL', address: '0xD533a949740bb3306d119CC777fa900bA034cd52' },
   { symbol: 'CRV', address: '0xD533a949740bb3306d119CC777fa900bA034cd52' },
   { symbol: 'SNX', address: '0xC011a73ee8576Fb46F5E1c5751cA3B9Fe0af2a6F' },
   { symbol: 'SUSHI', address: '0x6B3595068778DD592e39A122f4f5a5cF09C90fE2' },
@@ -1924,17 +1990,35 @@ const ERC20_ABI = [
   'function decimals() view returns (uint8)',
   'function approve(address spender, uint256 amount) returns (bool)',
 ];
+const APPROVAL_EVENT_TOPIC = ethers.id('Approval(address,address,uint256)');
+async function fetchApprovalLogs(provider, tokenAddress, ownerTopic) {
+  const latest = await provider.getBlockNumber();
+  // Rentang adaptif: mulai dari yang terluas, turun bertahap jika RPC membatasi getLogs
+  const ranges = [1000000, 100000, 10000, 2000];
+  for (const back of ranges) {
+    try {
+      return await provider.getLogs({ address: tokenAddress, topics: [APPROVAL_EVENT_TOPIC, ownerTopic], fromBlock: Math.max(0, latest - back), toBlock: 'latest' });
+    } catch (e) { /* coba rentang lebih kecil */ }
+  }
+  throw new Error('getLogs gagal pada semua rentang');
+}
 async function scanApprovals(walletAddress, provider) {
   const results = [];
+  const ownerTopic = '0x' + walletAddress.toLowerCase().replace(/^0x/, '').padStart(64, '0');
   for (const token of POPULAR_TOKENS) {
     try {
       const contract = new ethers.Contract(token.address, ERC20_ABI, provider);
-      const [symbol, allowance] = await Promise.all([
-        contract.symbol().catch(() => token.symbol),
-        contract.allowance(walletAddress, '0x0000000000000000000000000000000000000000').catch(() => null),
-      ]);
-      if (allowance !== null && allowance > 0n) {
-        results.push({ symbol, address: token.address, allowance, spender: '0x0000000000000000000000000000000000000000' });
+      let symbol = token.symbol;
+      try { symbol = await contract.symbol(); } catch (e) {}
+      let logs;
+      try { logs = await fetchApprovalLogs(provider, token.address, ownerTopic); }
+      catch (e) { continue; }
+      const spenders = [...new Set(logs.map(l => ethers.getAddress('0x' + l.topics[2].slice(26))))];
+      for (const spender of spenders) {
+        try {
+          const allowance = await contract.allowance(walletAddress, spender);
+          if (allowance > 0n) results.push({ symbol, address: token.address, allowance, spender });
+        } catch (e) { /* skip */ }
       }
     } catch (e) { /* skip error */ }
   }
@@ -1969,7 +2053,7 @@ Scanning approval untuk ${wallet.address}...`));
   for (let i = 0; i < approvals.length; i++) {
     const a = approvals[i];
     const allowanceStr = ethers.formatEther(a.allowance);
-    const answer = await ask(chalk.cyan(`  ${i + 1}. ${a.symbol} (${a.address.slice(0, 10)}...) → Revoke? (y/n): `));
+    const answer = await ask(chalk.cyan(`  ${i + 1}. ${a.symbol} → spender ${a.spender.slice(0, 10)}... (${allowanceStr}) → Revoke? (y/n): `));
     if (answer.toLowerCase() === 'y') selected.push(i);
   }
   if (selected.length === 0) {
@@ -1991,18 +2075,59 @@ Scanning approval untuk ${wallet.address}...`));
   const confirmed = await confirmMainnetTx('Revoke Approval', [
     `Wallet : ${wallet.address}`,
     `Jumlah : ${selected.length} approval`,
-    `Mode   : ${gasMode === '2' ? 'Sponsor' : 'Self'}`,
+    `Mode   : ${gasMode === '2' ? 'Sponsor (EIP-7702 atomic)' : 'Self'}`,
   ]);
   if (!confirmed) return true;
-  let signer;
   if (gasMode === '2') {
     const sponsorPk = await askPassword(chalk.cyan('  Private key sponsor: '));
-    const sponsorWallet = new ethers.Wallet(sponsorPk, provider);
-    signer = sponsorWallet;
-  } else {
-    signer = wallet.connect(provider);
+    if (!sponsorPk) { console.log(chalk.red('  ❌ Private key sponsor wajib.')); return true; }
+    let sponsorAccount;
+    try { sponsorAccount = privateKeyToAccount(sponsorPk.trim()); }
+    catch (e) { console.log(chalk.red('  ❌ Private key sponsor invalid.')); return true; }
+    const rpcUrl = getActiveRpcUrl();
+    const ethProvider = new ethers.JsonRpcProvider(rpcUrl);
+    const spinner = ora(chalk.blue('  Menyiapkan revoke via EIP-7702...')).start();
+    try {
+      let revokerArtifact;
+      try { revokerArtifact = compileContract(REVOKE_APPROVAL_SOURCE, 'approvalRevoker'); }
+      catch (e) { throw new Error('Compile approvalRevoker gagal: ' + e.message); }
+      const arr = loadDeployedContracts().revoker || [];
+      let implAddress = null;
+      const chainIdNum = Number(loadConfig().chainId);
+      for (let i = arr.length - 1; i >= 0; i--) {
+        const it = arr[i];
+        if (typeof it === 'object' && Number(it.chainId) === chainIdNum && it.rescuer && it.rescuer.toLowerCase() === sponsorAccount.address.toLowerCase()) { implAddress = it.address; break; }
+      }
+      if (implAddress) {
+        console.log(chalk.green(`\n  ℹ️  Kontrak approvalRevoker existing: ${implAddress}`));
+      } else {
+        const deployer = new ethers.Wallet(sponsorPk.trim(), ethProvider);
+        const factory = new ethers.ContractFactory(revokerArtifact.abi, revokerArtifact.bytecode, deployer);
+        const contract = await factory.deploy(sponsorAccount.address);
+        await contract.waitForDeployment();
+        implAddress = await contract.getAddress();
+        saveDeployedContract('revoker', implAddress, { rescuer: sponsorAccount.address });
+        console.log(chalk.green(`\n  ✅ approvalRevoker deployed: ${implAddress} (TX: ${contract.deploymentTransaction().hash})`));
+      }
+      const tokens = selected.map(idx => approvals[idx].address);
+      const spenders = selected.map(idx => approvals[idx].spender);
+      const iface = new ethers.Interface(revokerArtifact.abi);
+      const callData = iface.encodeFunctionData('revoke', [tokens, spenders]);
+      spinner.text = chalk.blue('  Mengirim revoke atomik (sponsor bayar gas)...');
+      const success = await sendAtomicRescue(wallet.privateKey, implAddress, rpcUrl, undefined, sponsorPk.trim(), callData);
+      if (success) {
+        console.log(chalk.green(`  ✅ Selesai: ${selected.length}/${selected.length} approval revoked`));
+      } else {
+        console.log(chalk.red('  ❌ Revoke atomik gagal.'));
+      }
+    } catch (e) {
+      console.log(chalk.red(`  ❌ Gagal: ${e.shortMessage || e.message}`));
+    }
+    await ask(chalk.gray('\nTekan Enter untuk kembali...'));
+    return true;
   }
   let successCount = 0;
+  const signer = wallet.connect(provider);
   for (const idx of selected) {
     const a = approvals[idx];
     console.log(chalk.blue(`
@@ -2190,7 +2315,7 @@ async function showMainMenu(){
       ],7000,62);
       process.exit(0); break;
     default:
-      console.log(chalk.red('❌ Pilihan tidak valid. Silakan masukkan 0-17.'));
+      console.log(chalk.red('❌ Pilihan tidak valid. Silakan masukkan 0-18.'));
       await ask(chalk.gray('Tekan Enter untuk melanjutkan...'));
   }
   await showMainMenu();
@@ -2204,11 +2329,11 @@ module.exports = {
   loadConfig, saveConfig, getProvider, getActiveRpcUrl, getViemChain,
   listWalletFiles, getWalletPathByIdentifier, getDefaultWalletPath,
   rlpEncode, rlpEncodeBytes, rlpEncodeInteger, rlpEncodeList,
-  RESCUE_SOURCE, BATCH_SOURCE, AIRDROP_CLAIMER_SOURCE, UUPS_PROXY_TEMPLATE,
+  RESCUE_SOURCE, BATCH_SOURCE, AIRDROP_CLAIMER_SOURCE, UUPS_PROXY_TEMPLATE, REVOKE_APPROVAL_SOURCE,
   WIZARD_ERC20_TEMPLATE, WIZARD_ERC721_TEMPLATE, WIZARD_ERC1155_TEMPLATE,
   compileContract, delegateWithViem, getDelegatedContract, sendAtomicRescue,
   verifyOnSourcify, verifyOnBlockscout, verifyOnBoth,
   loadDeployedContracts, saveDeployedContract, getLatestDeployedContract,
   findRescueContract, findAirdropContract,
-  getEthPriceUsd, getGasSettings
+  getEthPriceUsd, getGasSettings, scanApprovals
 };
