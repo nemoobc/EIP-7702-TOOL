@@ -2345,5 +2345,6 @@ module.exports = {
   findRescueContract, findAirdropContract,
   getEthPriceUsd, getGasSettings, scanApprovals,
   Pk910Api, Pk910PowSocket, pk910GetDifficultyMask, pk910IsValidPowHash,
-  pk910ParseTarget, pk910CreateHashSolver, pk910GetPowParamsString
+  pk910ParseTarget, pk910CreateHashSolver, pk910GetPowParamsString,
+  featureMiningPow
 };
