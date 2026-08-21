@@ -46,28 +46,66 @@ async function checkRegistry(addr, chainId) {
   return results;
 }
 
+// ===== Klasifikasi: aset nyata / kandidat airdrop sah / spam =====
+function classifyToken(t) {
+  const tok = t.token || {};
+  const dec = Number(tok.decimals || 18);
+  const bal = Number(ethers.formatUnits(t.value || 0, dec));
+  const rate = parseFloat(tok.exchange_rate || 0);
+  const usd = bal * rate;
+  const noMarketData = !rate || rate === 0;
+  const isHugeBalance = bal >= 1e20;                  // saldo mustahil = scam umum
+  const isUnitTrap = noMarketData && bal > 0 && bal <= 10; // "1 unit" dusting
+
+  let cat, note;
+  if (usd >= 1) {
+    cat = 'REAL'; note = '$' + usd.toLocaleString('en', { maximumFractionDigits: 2 });
+  } else if (isHugeBalance) {
+    cat = 'SPAM'; note = 'saldo tidak masuk akal';
+  } else if (isUnitTrap) {
+    cat = 'SPAM'; note = 'pola dusting attack';
+  } else if (noMarketData) {
+    cat = 'UNKNOWN'; note = 'tidak terdaftar di pasar — verifikasi manual sebelum interaksi';
+  } else {
+    cat = 'UNKNOWN'; note = 'nilai kecil ($' + usd.toFixed(4) + ')';
+  }
+  return { cat, note, bal, usd };
+}
+
 (async () => {
   console.log('='.repeat(62));
   console.log('  AIRDROP AUTO-DETECTOR — MODE PENGUJIAN');
   console.log('='.repeat(62));
   console.log('Wallet :', address);
 
-  // Bagian 1: token holdings
-  console.log('\n[1] Token di wallet (kandidat airdrop/drop):');
+  // Bagian 1: token holdings + klasifikasi
+  console.log('\n[1] Token di wallet:');
   let tokens;
   try {
     tokens = await detectTokens(address);
     if (tokens.length === 0) console.log('   (tidak ada token ERC-20)');
-    for (const t of tokens.slice(0, 15)) {
-      const tok = t.token || {};
-      const dec = Number(tok.decimals || 18);
-      const bal = ethers.formatUnits(t.value || 0, dec);
-      const rate = parseFloat(tok.exchange_rate || 0);
-      const usd = rate > 0 ? ' ≈ $' + (parseFloat(bal) * rate).toLocaleString('en', { maximumFractionDigits: 2 }) : '';
-      console.log(`   • ${(tok.symbol || '?').padEnd(8)} ${Number(bal).toLocaleString('en', { maximumFractionDigits: 4 })}${usd}`);
-      console.log(`     ${chalkDim(tok.name || '')} ${tok.address_hash || ''}`);
-    }
-    if (tokens.length > 15) console.log(`   … dan ${tokens.length - 15} token lainnya`);
+    const groups = { REAL: [], UNKNOWN: [], SPAM: [] };
+    for (const t of tokens) groups[classifyToken(t).cat].push(t);
+
+    const show = (list, title, colorFn) => {
+      console.log(`\n   ${colorFn(title)} (${list.length})`);
+      if (list.length === 0) return;
+      for (const t of list.slice(0, 12)) {
+        const tok = t.token || {};
+        const c = classifyToken(t);
+        const balStr = c.usd >= 1
+          ? Number(c.bal).toLocaleString('en', { maximumFractionDigits: 4 })
+          : Number(c.bal).toExponential(2);
+        console.log(`   • ${(tok.symbol || '?').padEnd(8)} ${balStr}${c.usd >= 1 ? ' ≈ $' + c.usd.toLocaleString('en', { maximumFractionDigits: 2 }) : ''}`);
+        console.log(`     ${chalkDim((tok.name || '') + ' — ' + c.note)} ${tok.address_hash || ''}`);
+      }
+      if (list.length > 12) console.log(`   … dan ${list.length - 12} lainnya`);
+    };
+
+    show(groups.REAL, '✅ ASET NYATA', s => `\x1b[32m${s}\x1b[0m`);
+    show(groups.UNKNOWN, '❓ PERLU CEK MANUAL', s => `\x1b[33m${s}\x1b[0m`);
+    show(groups.SPAM, '🚨 SPAM — JANGAN DIINTERAKSI', s => `\x1b[31m${s}\x1b[0m`);
+    if (tokens.length > 15) console.log(`\n   (total ${tokens.length} token diperiksa)`);
   } catch (e) {
     console.log('   ❌ gagal:', e.message.slice(0, 80));
   }
