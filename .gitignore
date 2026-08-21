@@ -5,6 +5,8 @@ wallets/
 test-wallet.json
 test-report.json
 test-output.log
+fork-wallets.json
+*.log
 
 # generated deployment data
 network/deployed-contracts.json
