@@ -11,3 +11,7 @@ fork-wallets.json
 # generated deployment data
 network/deployed-contracts.json
 fork-test.log
+
+# runtime state (dibuat otomatis saat pertama kali jalan)
+network/config.json
+__pycache__/
