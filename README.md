@@ -7,7 +7,6 @@
 <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-v18%2B-339933?style=for-the-badge&logo=node.js&logoColor=white" alt="Node.js"></a>
 <img src="https://img.shields.io/badge/Network-Mainnet%20%2B%20Sepolia-blue?style=for-the-badge&logo=ethereum&logoColor=white" alt="Network">
 <img src="https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge" alt="License">
-<img src="https://img.shields.io/badge/Tests-41%20PASS-success?style=for-the-badge&logo=checkmarx&logoColor=white" alt="Tests">
 
 <br>
 
@@ -128,23 +127,7 @@ Menu `17` → ambil CAPTCHA token dari [sepolia-faucet.pk910.de](https://sepolia
 
 ## 🧪 Testing
 
-```bash
-npm test            # suite lengkap on-chain (Sepolia) + offline compile
-npm run test:approval  # Approval Manager end-to-end
-npm run test:mining    # mining loop end-to-end (mock faucet lokal)
-```
-
-Test berhenti dengan aman (SKIP) jika wallet belum dana. Override:
-
-```bash
-TEST_RPC_URL=https://your-sepolia-rpc TEST_PRIVATE_KEY=0x... npm test
-```
-
-Cakupan: compile semua template (offline), RPC read-only, transfer ETH/token, seluruh varian ERC-20, Batch Call + delegasi, Rescue ETH/ERC20/ERC721, Revoke, Claim Airdrop, UUPS upgrade, scan/revoke approval, mining loop — termasuk pengujian dengan **state mainnet asli** (fork + simulasi `eth_call`/`stateOverride`, lihat `test-fork.js` & `test-mainnet-sim.js`).
-
-Hasil uji terakhir: **41 PASS / 0 FAIL** — termasuk verifikasi delegasi (`0xef0100…`) dan revoke kembali ke EOA.
-
-Wallet test: buat wallet baru, simpan di `test-wallet.json` (sudah di-gitignore), fund 0.05–0.1 Sepolia ETH. Laporan tersimpan di `test-report.json`.
+> Suite test on-chain sudah dihapus dari repo. Verifikasi dilakukan langsung melalui penggunaan tool di Sepolia testnet.
 
 <div align="center">
 <a href="https://github.com/nemoobc/EIP-7702-TOOL">

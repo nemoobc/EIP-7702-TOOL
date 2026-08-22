@@ -1,6 +1,6 @@
 {
   "name": "eip7702-tool",
-  "version": "3.3.0",
+  "version": "3.3.2",
   "description": "🔥 EIP-7702 Wallet Toolkit — create wallets, send ETH/tokens, delegate EOA, batch execute, rescue assets, revoke delegation & approvals, wizard deploy ERC-20/721/1155, PK910 faucet CLI",
   "license": "MIT",
   "main": "EIP-7702-TOOL.js",
@@ -9,7 +9,6 @@
   },
   "files": [
     "EIP-7702-TOOL.js",
-    "onchain-test.js",
     "network/config.json",
     "README.md",
     "LICENSE"
@@ -42,11 +41,7 @@
     "node": ">=18"
   },
   "scripts": {
-    "start": "node EIP-7702-TOOL.js",
-    "test": "node onchain-test.js",
-    "test:onchain": "node onchain-test.js",
-    "test:approval": "node test-approval-manager.js",
-    "test:mining": "node test-mining-mock.js"
+    "start": "node EIP-7702-TOOL.js"
   },
   "dependencies": {
     "chalk": "^4.1.2",
