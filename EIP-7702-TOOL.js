@@ -249,17 +249,24 @@ function askPassword(prompt='🔒 Password: '){
     process.stdout.write(prompt);
     const stdin=process.stdin;
     let input='';
+    let done=false;
     stdin.setRawMode(true); stdin.resume(); stdin.setEncoding('utf8');
+    const finish=()=>{ if(done)return; done=true;
+      stdin.removeListener('data',onData); stdin.setRawMode(false); stdin.pause();
+      process.stdout.write('\n'); res(input);
+    };
     const onData=ch=>{
-      ch=ch+'';
-      switch(ch){
-        case '\n': case '\r': case '\u0004':
-          stdin.removeListener('data',onData); stdin.setRawMode(false); stdin.pause(); process.stdout.write('\n'); res(input); break;
-        case '\u0003': process.exit(); break;
-        case '\b': case '\u007f':
-          if(input.length>0){ input=input.slice(0,-1); process.stdout.write('\b \b'); } break;
-        default:
-          if(ch>=' ' && ch!=='\u007f'){ input+=ch; process.stdout.write('*'); } break;
+      // Proses per karakter agar input multi-byte/paste tidak dianggap satu tombol.
+      for(const c of String(ch)){
+        if(done) break;
+        switch(c){
+          case '\n': case '\r': case '\u0004': finish(); break;
+          case '\u0003': process.exit(); break;
+          case '\b': case '\u007f':
+            if(input.length>0){ input=input.slice(0,-1); process.stdout.write('\b \b'); } break;
+          default:
+            if(c>=' ' && c!=='\u007f'){ input+=c; process.stdout.write('*'); } break;
+        }
       }
     };
     stdin.on('data',onData);
